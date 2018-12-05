@@ -1,6 +1,7 @@
 import { FactorioPack } from "./FactorioPack";
 import { lua_stack_trace_introspect, push_js_object } from "./lua_utils";
 import { FactorioMod } from "./FactorioMod";
+import apiDefines from "./ApiDefines";
 // @ts-ignore
 import * as fengari from "fengari";
 // @ts-ignore
@@ -34,51 +35,7 @@ export class FactorioModLua {
             return 1;
         });
 
-        this.init_defines({
-            difficulty_settings: {
-                recipe_difficulty: ["normal", "expensive"],
-                technology_difficulty: ["normal", "expensive"],
-            },
-            direction: ["north", "south", "east", "west"],
-            inventory: [
-                "fuel",
-                "burnt_result",
-                "chest",
-                "furnace_source",
-                "furnace_result",
-                "furnace_modules",
-                "player_quickbar",
-                "player_main",
-                "player_guns",
-                "player_ammo",
-                "player_armor",
-                "player_tools",
-                "player_vehicle",
-                "player_trash",
-                "god_quickbar",
-                "god_main",
-                "roboport_robot",
-                "roboport_material",
-                "robot_cargo",
-                "robot_repair",
-                "assembling_machine_input",
-                "assembling_machine_output",
-                "assembling_machine_modules",
-                "lab_input",
-                "lab_modules",
-                "mining_drill_modules",
-                "item_main",
-                "rocket_silo_rocket",
-                "rocket_silo_result",
-                "rocket",
-                "car_trunk",
-                "car_ammo",
-                "cargo_wagon",
-                "turret_ammo",
-                "beacon_modules",
-                "character_corpse",
-            ],
-        });
+        this.init_defines(apiDefines);
         this.exec_lua(`function log(x) end`);
         this.exec_lua(`function table_size(T)
     local count = 0
