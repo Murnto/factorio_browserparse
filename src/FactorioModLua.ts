@@ -225,11 +225,11 @@ export class FactorioModLua {
         this.runModsScriptStage(mods, "settings-updates");
         this.runModsScriptStage(mods, "settings-final-fixes");
 
-        // TODO parse settings
-        this.exec_lua(`function string.ends(String,End)
-   return End=='' or string.sub(String,-string.len(End))==End
-end`);
         this.exec_lua(`
+            function string.ends(String,End)
+                return End=='' or string.sub(String,-string.len(End))==End
+            end
+
             for type, t_val in pairs(data.raw) do
                 if string.ends(type, '-setting') then
                     for k, v in pairs(data.raw[type]) do
