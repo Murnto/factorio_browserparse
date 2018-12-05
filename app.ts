@@ -3,6 +3,14 @@ import "es7-object-polyfill";
 import * as JSZip from "jszip";
 import { lua_stack_trace_introspect, lua_value_to_js, push_js_object } from "./lua_utils";
 import { dumpMemUsage } from "./utils";
+// @ts-ignore
+import fengari from "fengari";
+// @ts-ignore
+import { luaS_newliteral } from "fengari/src/lstring";
+// @ts-ignore
+import { luaH_getstr, luaH_new } from "fengari/src/ltable";
+
+import * as fs from "fs";
 
 const {
     to_luastring,
@@ -15,15 +23,7 @@ const {
     lualib: {
         luaL_openlibs,
     },
-} = require("fengari");
-
-const { luaS_newliteral } = require("fengari/src/lstring");
-const {
-    luaH_getstr,
-    luaH_new,
-} = require("fengari/src/ltable");
-
-const fs = require("fs");
+} = fengari;
 
 interface ModInfo {
     name: string
@@ -49,28 +49,36 @@ interface LuaScript {
 }
 
 class FactorioMod {
-    info!: ModInfo;
-    loadedZip!: JSZip | null;
-    luaFiles: { [index: string]: LuaScript } = {};
-    dependencies!: FactorioModDependency[];
-    luaPaths: string[] = [""];
-    topLevelPrefix: string = "";
+    public info!: ModInfo;
+    public luaFiles: { [index: string]: LuaScript } = {};
+    public dependencies!: FactorioModDependency[];
+    public luaPaths: string[] = [""];
+    private loadedZip!: JSZip | null;
+    private topLevelPrefix: string = "";
 
-    async load(zipPath: string) {
-        const debugTiming = false;
-
-        debugTiming && console.time(`Load zip: ${zipPath}`);
+    public async load(zipPath: string, debugTiming: boolean = false) {
+        if (debugTiming) {
+            console.time(`Load zip: ${zipPath}`);
+        }
         const data = fs.readFileSync(zipPath);
-        debugTiming && console.timeEnd(`Load zip: ${zipPath}`);
+        if (debugTiming) {
+            console.timeEnd(`Load zip: ${zipPath}`);
+        }
 
-        debugTiming && console.time(`Parse zip: ${zipPath}`);
+        if (debugTiming) {
+            console.time(`Parse zip: ${zipPath}`);
+        }
         this.loadedZip = await new JSZip()
             .loadAsync(data);
 
         this.detectToplevelFolder();
-        debugTiming && console.timeEnd(`Parse zip: ${zipPath}`);
+        if (debugTiming) {
+            console.timeEnd(`Parse zip: ${zipPath}`);
+        }
 
-        debugTiming && console.time(`Decompress lua scripts: ${zipPath}`);
+        if (debugTiming) {
+            console.time(`Decompress lua scripts: ${zipPath}`);
+        }
         await Promise.all(this.loadedZip.filter((relativePath, file) =>
             relativePath.endsWith(".lua"),
         ).map(async file => {
@@ -82,10 +90,12 @@ class FactorioMod {
 
             this.luaFiles[name] = {
                 content: await file.async("text"),
-                name: name,
+                name,
             };
         }));
-        debugTiming && console.timeEnd(`Decompress lua scripts: ${zipPath}`);
+        if (debugTiming) {
+            console.timeEnd(`Decompress lua scripts: ${zipPath}`);
+        }
 
         const infoFile = this.loadedZip.file("info.json");
         const infoString = await infoFile.async("text");
@@ -111,8 +121,8 @@ class FactorioMod {
 
             if (match !== null) {
                 this.dependencies.push({
-                    optional: match[1] === "?",
                     name: match[2],
+                    optional: match[1] === "?",
                     relation: match[3],
                     version: match[4],
                 });
@@ -139,13 +149,13 @@ class FactorioMod {
 type DefinesDef = string[] | { [index: string]: DefinesDef }
 
 class FactorioModLua {
-    L: any;
+    public L: any;
     private availableContexts: FactorioMod[] = [];
     private coreContext!: FactorioMod;
     private storedContextState: { [index: string]: any } = {};
     private internalLoaded: any;
 
-    init() {
+    public init() {
         const L = this.L = luaL_newstate();
         lua.lua_checkstack(this.L, 100);
         luaL_openlibs(L);
@@ -183,7 +193,7 @@ class FactorioModLua {
         this.internalLoaded = luaH_getstr(L.l_G.l_registry.value, luaS_newliteral(L, "_LOADED"));
     }
 
-    load_mods(p: FactorioPack, mods: FactorioMod[]) {
+    public load_mods(p: FactorioPack, mods: FactorioMod[]) {
         const L = this.L;
 
         const modsList = {};
@@ -207,7 +217,7 @@ class FactorioModLua {
         this.loadData(p, mods);
     }
 
-    exec_lua(code: string) {
+    public exec_lua(code: string) {
         luaL_loadstring(this.L, to_luastring(code));
         // lua.lua_resume(this.L, null, 0)
         const result = lua.lua_pcall(this.L, 0, lua.LUA_MULTRET, 0);
@@ -217,7 +227,7 @@ class FactorioModLua {
         }
     }
 
-    close() {
+    public close() {
         this.storedContextState = {};
         this.internalLoaded = null;
         lua.lua_close(this.L);
@@ -328,7 +338,7 @@ class FactorioModLua {
         lua.lua_pop(L, 2);
     }
 
-    private find_script_in_context(path: string, quiet: boolean = false, additionalSearchPath: { modName: string, path: string }[] = []): { content: string, name: string, mod: FactorioMod } | null {
+    private find_script_in_context(path: string, quiet: boolean = false, additionalSearchPath: Array<{ modName: string, path: string }> = []): { content: string, name: string, mod: FactorioMod } | null {
         const fpath = path.replace(/\./g, "/") + ".lua";
 
         for (const mod of this.availableContexts.concat(this.coreContext)) {
@@ -351,7 +361,7 @@ class FactorioModLua {
                 if (script !== undefined) {
                     return {
                         ...script,
-                        mod: mod,
+                        mod,
                     };
                 }
             }
@@ -430,31 +440,32 @@ end`);
 }
 
 function compareVersions(target: string, version: string): number {
-    if (target === version) return 0;
+    if (target === version) { return 0; }
 
-    let tSplit = target.split(".");
-    let vSplit = version.split(".");
-    let minLength = Math.min(tSplit.length, vSplit.length);
+    const tSplit = target.split(".");
+    const vSplit = version.split(".");
+    const minLength = Math.min(tSplit.length, vSplit.length);
 
     for (let i = 0; i < minLength; i++) {
-        const t = parseInt(tSplit[i]), v = parseInt(vSplit[i]);
+        const t = parseInt(tSplit[i], 10);
+        const v = parseInt(vSplit[i], 10);
 
-        if (t === v) continue;
-        if (t < v) return 1;
-        if (t > v) return -1;
+        if (t === v) { continue; }
+        if (t < v) { return 1; }
+        if (t > v) { return -1; }
     }
 
-    if (tSplit.length < vSplit.length) return 1;
-    if (tSplit.length > vSplit.length) return -1;
+    if (tSplit.length < vSplit.length) { return 1; }
+    if (tSplit.length > vSplit.length) { return -1; }
 
     return 0;
 }
 
 class FactorioPack {
-    mods: { [index: string]: FactorioMod } = {};
-    modLoadOrder: string[] = ["core"]; // core is always first
+    public mods: { [index: string]: FactorioMod } = {};
+    public modLoadOrder: string[] = ["core"]; // core is always first
 
-    async loadModArchive(zipPath: string) {
+    public async loadModArchive(zipPath: string) {
         // console.time(`Loading archive: ${zipPath}`);
         const mod = new FactorioMod();
 
@@ -464,18 +475,18 @@ class FactorioPack {
         // console.timeEnd(`Loading archive: ${zipPath}`);
     }
 
-    addMod(mod: FactorioMod) {
+    public addMod(mod: FactorioMod) {
         this.mods[mod.info.name] = mod;
     }
 
-    resolveMods() {
+    public resolveMods() {
         const remaining = Object.keys(this.mods);
         remaining.sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }));
 
         let priorProgress = -1;
 
         while (remaining.length) {
-            if (priorProgress == remaining.length) {
+            if (priorProgress === remaining.length) {
                 throw new Error(`Stuck resolving remaining mods: ${remaining}`);
             }
             priorProgress = remaining.length;
@@ -538,7 +549,7 @@ class FactorioPack {
         }
     }
 
-    loadMods() {
+    public loadMods() {
         // TODO load locale
 
         const mods = this.modLoadOrder.map(k => this.mods[k]);
