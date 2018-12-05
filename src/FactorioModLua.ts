@@ -36,12 +36,20 @@ export class FactorioModLua {
         });
 
         this.init_defines(apiDefines);
-        this.exec_lua(`function log(x) end`);
-        this.exec_lua(`function table_size(T)
-    local count = 0
-    for _ in pairs(T) do count = count + 1 end
-    return count
-  end`);
+
+        // language=Lua
+        this.exec_lua(`
+            function log(x)
+            end
+
+            function table_size(T)
+                local count = 0
+                for _ in pairs(T) do
+                    count = count + 1
+                end
+                return count
+            end
+        `);
 
         this.hook_require();
 
@@ -62,8 +70,11 @@ export class FactorioModLua {
         this.coreContext.luaPaths.push("lualib/");
         this.setModContext(this.coreContext);
 
-        this.exec_lua(`require('dataloader')`);
-        this.exec_lua(`require('data')`);
+        // language=Lua
+        this.exec_lua(`
+            require('dataloader')
+            require('data')
+        `);
 
         this.loadSettings(p, mods);
         this.loadData(p, mods);
@@ -156,10 +167,11 @@ export class FactorioModLua {
     private hook_require() {
         const L = this.L;
 
+        // language=Lua
         this.exec_lua(`
-    package.searchers[3] = nil
-    package.searchers[4] = nil
-`);
+            package.searchers[3] = nil
+            package.searchers[4] = nil
+        `);
 
         // TODO improve table access
         lua.lua_getglobal(L, "package");
@@ -213,21 +225,24 @@ export class FactorioModLua {
             if (!!mod.luaFiles[name + ".lua"]) {
                 this.setModContext(mod);
 
+                // language=Lua
                 this.exec_lua(`require('${name}')`);
             }
         }
     }
 
     private loadSettings(p: FactorioPack, mods: FactorioMod[]) {
-        this.exec_lua(`settings = {startup = {}}`);
+        // language=Lua
+        this.exec_lua(`settings = { startup = {} }`);
 
         this.runModsScriptStage(mods, "settings");
         this.runModsScriptStage(mods, "settings-updates");
         this.runModsScriptStage(mods, "settings-final-fixes");
 
+        // language=Lua
         this.exec_lua(`
-            function string.ends(String,End)
-                return End=='' or string.sub(String,-string.len(End))==End
+            function string.ends(String, End)
+                return End == '' or string.sub(String, -string.len(End)) == End
             end
 
             for type, t_val in pairs(data.raw) do
