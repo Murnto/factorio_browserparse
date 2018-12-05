@@ -1,24 +1,26 @@
 {
-  "name": "browserparse",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "build": "tsc"
-  },
-  "dependencies": {
-    "fengari": "^0.1.4",
-    "jszip": "^3.1.5"
-  },
-  "devDependencies": {
-    "@types/jszip": "^3.1.4",
-    "debug": "~2.6.9",
-    "es6-promise": "^4.2.5",
-    "es7-object-polyfill": "^0.0.7",
-    "prettier": "^1.15.3",
-    "source-map-support": "^0.5.9",
-    "tslib": "^1.9.3",
-    "tslint": "^5.11.0",
-    "tslint-config-prettier": "^1.17.0",
-    "typescript": "^3.2.1"
-  }
+    "name": "browserparse",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "build": "tsc",
+        "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+        "lint": "tslint -p tsconfig.json"
+    },
+    "dependencies": {
+        "fengari": "^0.1.4",
+        "jszip": "^3.1.5"
+    },
+    "devDependencies": {
+        "@types/jszip": "^3.1.4",
+        "debug": "~2.6.9",
+        "es6-promise": "^4.2.5",
+        "es7-object-polyfill": "^0.0.7",
+        "prettier": "^1.15.3",
+        "source-map-support": "^0.5.9",
+        "tslib": "^1.9.3",
+        "tslint": "^5.11.0",
+        "tslint-config-prettier": "^1.17.0",
+        "typescript": "^3.2.1"
+    }
 }
