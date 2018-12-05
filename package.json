@@ -1,0 +1,20 @@
+{
+  "name": "browserparse",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./app.js"
+  },
+  "dependencies": {
+    "fengari": "^0.1.4",
+    "jszip": "^3.1.5"
+  },
+  "devDependencies": {
+    "@types/jszip": "^3.1.4",
+    "debug": "~2.6.9",
+    "es6-promise": "^4.2.5",
+    "source-map-support": "^0.5.9",
+    "tslib": "^1.9.3",
+    "typescript": "^3.2.1"
+  }
+}
