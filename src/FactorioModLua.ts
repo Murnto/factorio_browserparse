@@ -102,8 +102,6 @@ export class FactorioModLua {
             });
         }
 
-        // TODO find path of requiring file and also search there
-
         const result = this.find_script_in_context(path, true, additionalSearchPath);
 
         if (result === null) {
