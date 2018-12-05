@@ -1,14 +1,13 @@
-import 'source-map-support/register'
-import 'es7-object-polyfill'
+import "source-map-support/register";
+import "es7-object-polyfill";
 import * as JSZip from "jszip";
-import {lua_stack_trace_introspect, lua_value_to_js, push_js_object} from "./lua_utils";
-import {dumpMemUsage} from "./utils";
+import { lua_stack_trace_introspect, lua_value_to_js, push_js_object } from "./lua_utils";
+import { dumpMemUsage } from "./utils";
 
 const {
     to_luastring,
     lua,
     lauxlib: {
-        luaL_requiref,
         luaL_newstate,
         luaL_loadstring,
         luaL_loadbuffer,
@@ -16,14 +15,13 @@ const {
     lualib: {
         luaL_openlibs,
     },
-} = require('fengari');
+} = require("fengari");
 
-const {luaS_newliteral} = require('fengari/src/lstring');
+const { luaS_newliteral } = require("fengari/src/lstring");
 const {
-    luaH_getint,
     luaH_getstr,
     luaH_new,
-} = require('fengari/src/ltable');
+} = require("fengari/src/ltable");
 
 const fs = require("fs");
 
@@ -55,7 +53,7 @@ class FactorioMod {
     loadedZip!: JSZip | null;
     luaFiles: { [index: string]: LuaScript } = {};
     dependencies!: FactorioModDependency[];
-    luaPaths: string[] = [''];
+    luaPaths: string[] = [""];
     topLevelPrefix: string = "";
 
     async load(zipPath: string) {
@@ -74,7 +72,7 @@ class FactorioMod {
 
         debugTiming && console.time(`Decompress lua scripts: ${zipPath}`);
         await Promise.all(this.loadedZip.filter((relativePath, file) =>
-            relativePath.endsWith(".lua")
+            relativePath.endsWith(".lua"),
         ).map(async file => {
             let name = file.name;
 
@@ -96,7 +94,7 @@ class FactorioMod {
         (this.loadedZip as any).files = null;
         this.loadedZip = null;
 
-        this.parseDependencies()
+        this.parseDependencies();
     }
 
     private parseDependencies() {
@@ -113,13 +111,13 @@ class FactorioMod {
 
             if (match !== null) {
                 this.dependencies.push({
-                    optional: match[1] === '?',
+                    optional: match[1] === "?",
                     name: match[2],
                     relation: match[3],
                     version: match[4],
-                })
+                });
             } else {
-                throw new Error(`Failed to parse dependency "${dep}"`)
+                throw new Error(`Failed to parse dependency "${dep}"`);
             }
         }
     }
@@ -128,7 +126,7 @@ class FactorioMod {
         // let found: JSZip.JSZipObject | null = null;
 
         for (const file of Object.values(this.loadedZip!.files)) {
-            if (file.name.endsWith("info.json") && file.name.indexOf('/') === file.name.lastIndexOf('/')) {
+            if (file.name.endsWith("info.json") && file.name.indexOf("/") === file.name.lastIndexOf("/")) {
                 this.topLevelPrefix = file.name.slice(0, file.name.lastIndexOf("info.json"));
 
                 // console.info(`Using toplevel folder ${this.topLevelPrefix}`);
@@ -154,23 +152,23 @@ class FactorioModLua {
         // Report native errors
         lua.lua_atnativeerror(L, (L: any) => {
             console.error(lua.lua_touserdata(L, 1));
-            return 1
+            return 1;
         });
 
         this.init_defines({
             difficulty_settings: {
                 recipe_difficulty: [
-                    'normal', 'expensive',
+                    "normal", "expensive",
                 ],
                 technology_difficulty: [
-                    'normal', 'expensive',
+                    "normal", "expensive",
                 ],
             },
             direction: [
-                'north', 'south', 'east', 'west',
+                "north", "south", "east", "west",
             ],
             inventory: [
-                'fuel', 'burnt_result', 'chest', 'furnace_source', 'furnace_result', 'furnace_modules', 'player_quickbar', 'player_main', 'player_guns', 'player_ammo', 'player_armor', 'player_tools', 'player_vehicle', 'player_trash', 'god_quickbar', 'god_main', 'roboport_robot', 'roboport_material', 'robot_cargo', 'robot_repair', 'assembling_machine_input', 'assembling_machine_output', 'assembling_machine_modules', 'lab_input', 'lab_modules', 'mining_drill_modules', 'item_main', 'rocket_silo_rocket', 'rocket_silo_result', 'rocket', 'car_trunk', 'car_ammo', 'cargo_wagon', 'turret_ammo', 'beacon_modules', 'character_corpse'
+                "fuel", "burnt_result", "chest", "furnace_source", "furnace_result", "furnace_modules", "player_quickbar", "player_main", "player_guns", "player_ammo", "player_armor", "player_tools", "player_vehicle", "player_trash", "god_quickbar", "god_main", "roboport_robot", "roboport_material", "robot_cargo", "robot_repair", "assembling_machine_input", "assembling_machine_output", "assembling_machine_modules", "lab_input", "lab_modules", "mining_drill_modules", "item_main", "rocket_silo_rocket", "rocket_silo_result", "rocket", "car_trunk", "car_ammo", "cargo_wagon", "turret_ammo", "beacon_modules", "character_corpse",
             ],
         });
         this.exec_lua(`function log(x) end`);
@@ -196,7 +194,7 @@ class FactorioModLua {
         lua.lua_setglobal(L, "mods");
 
         this.coreContext = mods.splice(0, 1)[0];
-        this.coreContext.luaPaths.push('lualib/');
+        this.coreContext.luaPaths.push("lualib/");
         this.setModContext(this.coreContext);
 
         this.exec_lua(`require('dataloader')`);
@@ -223,7 +221,7 @@ class FactorioModLua {
         this.storedContextState = {};
         this.internalLoaded = null;
         lua.lua_close(this.L);
-        console.log("bye")
+        console.log("bye");
     }
 
     private lua_require(L: any) {
@@ -242,18 +240,16 @@ class FactorioModLua {
                 continue;
             }
 
-            const {id, p} = func.value;
-
-            const pc = stack.i_ci.l_savedpc;
-            const lineNo = p.lineinfo[pc - 1];
+            const { p } = func.value;
+            // const lineNo = p.lineinfo[stack.i_ci.l_savedpc - 1];
             const source = new TextDecoder("utf-8").decode(p.source.realstring);
 
-            if (source.startsWith('@')) {
+            if (source.startsWith("@")) {
                 // console.log(`level ${i}: line=${lineNo} id=${id} p.plen=${p.p.length} source=${source}`);
 
                 additionalSearchPath.push({
-                    modName: source.slice(1, source.indexOf('/')),
-                    path: source.slice(source.indexOf('/') + 1, source.lastIndexOf('/') + 1),
+                    modName: source.slice(1, source.indexOf("/")),
+                    path: source.slice(source.indexOf("/") + 1, source.lastIndexOf("/") + 1),
                 });
 
                 break;
@@ -269,7 +265,7 @@ class FactorioModLua {
         }
 
         const content = result.content;
-        const fpath = result.mod.info.name + '/' + path.replace(/\./g, '/') + '.lua';
+        const fpath = result.mod.info.name + "/" + path.replace(/\./g, "/") + ".lua";
 
         if (content === null) {
             return 0;
@@ -333,7 +329,7 @@ class FactorioModLua {
     }
 
     private find_script_in_context(path: string, quiet: boolean = false, additionalSearchPath: { modName: string, path: string }[] = []): { content: string, name: string, mod: FactorioMod } | null {
-        const fpath = path.replace(/\./g, '/') + '.lua';
+        const fpath = path.replace(/\./g, "/") + ".lua";
 
         for (const mod of this.availableContexts.concat(this.coreContext)) {
             let searchPaths = [];
@@ -397,7 +393,7 @@ end`);
             end
         `);
 
-        console.log('Settings added to startup')
+        console.log("Settings added to startup");
     }
 
     private loadData(p: FactorioPack, mods: FactorioMod[]) {
@@ -469,12 +465,12 @@ class FactorioPack {
     }
 
     addMod(mod: FactorioMod) {
-        this.mods[mod.info.name] = mod
+        this.mods[mod.info.name] = mod;
     }
 
     resolveMods() {
         const remaining = Object.keys(this.mods);
-        remaining.sort((a, b) => a.localeCompare(b, 'en', {numeric: true, sensitivity: 'base'}));
+        remaining.sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }));
 
         let priorProgress = -1;
 
@@ -499,7 +495,7 @@ class FactorioPack {
                         if (dep.optional) {
                             continue; // skip missing optional dependency
                         } else {
-                            throw new Error(`Dependency check failed! "${name}" requires unknown mod "${dep.name}"`)
+                            throw new Error(`Dependency check failed! "${name}" requires unknown mod "${dep.name}"`);
                         }
                     }
 
@@ -516,16 +512,16 @@ class FactorioPack {
                         switch (dep.relation) {
                             case "=":
                                 if (versionComparison !== 0) {
-                                    throw new Error(`Dependency check failed! "${name}" requires version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`)
+                                    throw new Error(`Dependency check failed! "${name}" requires version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`);
                                 }
                                 break;
                             case ">=":
                                 if (versionComparison < 0) {
-                                    throw new Error(`Dependency check failed! "${name}" requires at least version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`)
+                                    throw new Error(`Dependency check failed! "${name}" requires at least version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`);
                                 }
                                 break;
                             default:
-                                throw new Error(`Unknown dependency relation "${dep.relation}"`)
+                                throw new Error(`Unknown dependency relation "${dep.relation}"`);
                         }
                     }
                 }
@@ -625,9 +621,9 @@ async function test() {
 
     dumpMemUsage("After resolve");
 
-    console.time('pack.loadMods()');
+    console.time("pack.loadMods()");
     await pack.loadMods();
-    console.timeEnd('pack.loadMods()');
+    console.timeEnd("pack.loadMods()");
 
     dumpMemUsage("After dump");
 }

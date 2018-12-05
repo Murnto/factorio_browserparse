@@ -3,7 +3,7 @@ import * as assert from "assert";
 const {
     to_jsstring,
     lua,
-} = require('fengari');
+} = require("fengari");
 
 
 export function push_js_object(L: any, obj: any | number) {
@@ -31,14 +31,14 @@ export function push_js_object(L: any, obj: any | number) {
         }
 
         // console.log('pushtable', obj);
-    } else if (typeof obj === 'string') {
+    } else if (typeof obj === "string") {
         lua.lua_pushstring(L, obj);
         // console.log('pushstring', obj);
-    } else if (typeof obj === 'number') {
+    } else if (typeof obj === "number") {
         lua.lua_pushnumber(L, obj);
         // console.log('pushnumber', obj);
     } else {
-        throw new Error(`Unknown object type: ${typeof obj}: "${obj}"`)
+        throw new Error(`Unknown object type: ${typeof obj}: "${obj}"`);
     }
 }
 
@@ -72,15 +72,11 @@ export function table_to_object(L: any, index: number) {
     lua.lua_pushinteger(L, 1);
 
     assert(lua.lua_gettop(L) === initialTop + 1);
-    // const r = lua.lua_rawget(L, index - 1);
-    const is_array = lua.lua_gettable(L, index - 1) != 0;
     lua.lua_pop(L, 1);
     assert(lua.lua_gettop(L) === initialTop);
 
     const obj = {};
     let allNumbers = true;
-
-    // console.log('keys', table_get_keys(L, index));
 
     lua.lua_pushnil(L); // first key
     assert(lua.lua_gettop(L) === initialTop + 1);
@@ -90,7 +86,7 @@ export function table_to_object(L: any, index: number) {
         const top = lua.lua_gettop(L);
 
         if (!lua.lua_isstring(L, -2)) {
-            throw new Error("Key wasn't a string?")
+            throw new Error("Key wasn't a string?");
         }
 
         const value = lua_value_to_js(L, -1);
@@ -141,9 +137,9 @@ export function table_get_keys(L: any, index: number) {
                 obj.push(lua.lua_tojsstring(L, -2));
             }
         } else if (lua.lua_islightuserdata(L, -2)) {
-            obj.push('@' + lua.lua_tojsstring(L, -2));
+            obj.push("@" + lua.lua_tojsstring(L, -2));
         } else {
-            throw new Error("Key wasn't a string?")
+            throw new Error("Key wasn't a string?");
         }
 
         lua.lua_pop(L, 1); // pop the value so the key is on top
@@ -170,7 +166,7 @@ export function lua_value_to_js(L: any, index: number): any {
         case lua.LUA_TTABLE:
             return table_to_object(L, index);
         case lua.LUA_TFUNCTION:
-            return '[[[Function]]]';
+            return "[[[Function]]]";
             throw new Error(`Unhandled type: "LUA_TFUNCTION"`);
         case lua.LUA_TUSERDATA:
             throw new Error(`Unhandled type: "LUA_TUSERDATA"`);
@@ -191,7 +187,7 @@ export function lua_stack_trace_introspect(L: any) {
         if (func !== undefined) {
             switch (func.type) {
                 case 6:
-                    const {id, p} = func.value;
+                    const { id, p } = func.value;
 
                     const pc = stack.l_savedpc;
                     const lineNo = p.lineinfo[pc - 1];
@@ -199,7 +195,7 @@ export function lua_stack_trace_introspect(L: any) {
                     const k = [];
                     for (const v of p.k) {
                         if (v && v.value) {
-                            k.push(new TextDecoder("utf-8").decode(v.value.realstring))
+                            k.push(new TextDecoder("utf-8").decode(v.value.realstring));
                         }
                     }
 
@@ -224,7 +220,7 @@ export function lua_stack_trace(L: any) {
         const func = stack.i_ci.func;
         switch (func.type) {
             case 6:
-                const {id, p} = func.value;
+                const { id, p } = func.value;
 
                 const pc = stack.i_ci.l_savedpc;
                 const lineNo = p.lineinfo[pc - 1];
@@ -232,7 +228,7 @@ export function lua_stack_trace(L: any) {
                 const k = [];
                 for (const v of p.k) {
                     if (v && v.value) {
-                        k.push(new TextDecoder("utf-8").decode(v.value.realstring))
+                        k.push(new TextDecoder("utf-8").decode(v.value.realstring));
                     }
                 }
 
