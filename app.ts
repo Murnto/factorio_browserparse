@@ -1,4 +1,5 @@
 import 'source-map-support/register'
+import 'es7-object-polyfill'
 import * as JSZip from "jszip";
 import {lua_stack_trace_introspect, lua_value_to_js, push_js_object} from "./lua_utils";
 import {dumpMemUsage} from "./utils";
@@ -50,10 +51,10 @@ interface LuaScript {
 }
 
 class FactorioMod {
-    info: ModInfo;
-    loadedZip: JSZip | null;
+    info!: ModInfo;
+    loadedZip!: JSZip | null;
     luaFiles: { [index: string]: LuaScript } = {};
-    dependencies: FactorioModDependency[];
+    dependencies!: FactorioModDependency[];
     luaPaths: string[] = [''];
     topLevelPrefix: string = "";
 
@@ -141,8 +142,8 @@ type DefinesDef = string[] | { [index: string]: DefinesDef }
 
 class FactorioModLua {
     L: any;
-    availableContexts: FactorioMod[] = [];
-    coreContext: FactorioMod;
+    private availableContexts: FactorioMod[] = [];
+    private coreContext!: FactorioMod;
     private storedContextState: { [index: string]: any } = {};
     private internalLoaded: any;
 
@@ -208,6 +209,23 @@ class FactorioModLua {
         this.loadData(p, mods);
     }
 
+    exec_lua(code: string) {
+        luaL_loadstring(this.L, to_luastring(code));
+        // lua.lua_resume(this.L, null, 0)
+        const result = lua.lua_pcall(this.L, 0, lua.LUA_MULTRET, 0);
+        if (result) {
+            lua_stack_trace_introspect(this.L);
+            throw new Error(`Failed to run script:  ${lua.lua_tojsstring(this.L, -1)}`);
+        }
+    }
+
+    close() {
+        this.storedContextState = {};
+        this.internalLoaded = null;
+        lua.lua_close(this.L);
+        console.log("bye")
+    }
+
     private lua_require(L: any) {
         const path = lua.lua_tojsstring(L, -1);
         // console.log(`require("${path}")`);
@@ -263,27 +281,6 @@ class FactorioModLua {
         lua.lua_pushfstring(L, to_luastring("@%s"), to_luastring(fpath));
 
         return 2;  /* return open function and file name */
-    }
-
-    exec_lua(code: string) {
-        luaL_loadstring(this.L, to_luastring(code));
-        // lua.lua_resume(this.L, null, 0)
-        const result = lua.lua_pcall(this.L, 0, lua.LUA_MULTRET, 0);
-        if (result) {
-            lua_stack_trace_introspect(this.L);
-            throw new Error(`Failed to run script:  ${lua.lua_tojsstring(this.L, -1)}`);
-        }
-    }
-
-    /**
-     * @deprecated
-     */
-    require(moduleName: string) {
-        luaL_requiref(this.L, to_luastring(moduleName), this.lua_require.bind(this), false);
-        // this.exec_lua(`
-        // print('mark')
-        // print(package.loaded.data())
-        // `)
     }
 
     private init_defines(data: DefinesDef, key?: string) {
@@ -433,13 +430,6 @@ end`);
 
         this.availableContexts.length = 0;
         this.availableContexts.push(mod);
-    }
-
-    close() {
-        this.storedContextState = {};
-        this.internalLoaded = null;
-        lua.lua_close(this.L);
-        console.log("bye")
     }
 }
 
@@ -643,6 +633,3 @@ async function test() {
 }
 
 test();
-// const x = new FactorioModLua();
-// x.init();
-
