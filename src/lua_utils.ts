@@ -1,10 +1,6 @@
 import * as assert from "assert";
-
-const {
-    to_jsstring,
-    lua,
-} = require("fengari");
-
+// @ts-ignore
+import { lua, to_jsstring } from "fengari";
 
 export function push_js_object(L: any, obj: any | number) {
     if (Array.isArray(obj)) {
@@ -44,7 +40,7 @@ export function push_js_object(L: any, obj: any | number) {
 
 export function stack_dump(L: any, key?: string) {
     const stack = [];
-    let top = lua.lua_gettop(L);
+    const top = lua.lua_gettop(L);
     for (let i = 1; i <= top; i++) {
         const type = lua.lua_type(L, i);
         switch (type) {

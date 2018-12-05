@@ -11,17 +11,11 @@ import { luaH_getstr, luaH_new } from "fengari/src/ltable";
 const {
     to_luastring,
     lua,
-    lauxlib: {
-        luaL_newstate,
-        luaL_loadstring,
-        luaL_loadbuffer,
-    },
-    lualib: {
-        luaL_openlibs,
-    },
+    lauxlib: { luaL_newstate, luaL_loadstring, luaL_loadbuffer },
+    lualib: { luaL_openlibs },
 } = fengari;
 
-type DefinesDef = string[] | { [index: string]: DefinesDef }
+type DefinesDef = string[] | { [index: string]: DefinesDef };
 
 export class FactorioModLua {
     public L: any;
@@ -31,7 +25,7 @@ export class FactorioModLua {
     private internalLoaded: any;
 
     public init() {
-        const L = this.L = luaL_newstate();
+        const L = (this.L = luaL_newstate());
         lua.lua_checkstack(this.L, 100);
         luaL_openlibs(L);
         // Report native errors
@@ -42,18 +36,47 @@ export class FactorioModLua {
 
         this.init_defines({
             difficulty_settings: {
-                recipe_difficulty: [
-                    "normal", "expensive",
-                ],
-                technology_difficulty: [
-                    "normal", "expensive",
-                ],
+                recipe_difficulty: ["normal", "expensive"],
+                technology_difficulty: ["normal", "expensive"],
             },
-            direction: [
-                "north", "south", "east", "west",
-            ],
+            direction: ["north", "south", "east", "west"],
             inventory: [
-                "fuel", "burnt_result", "chest", "furnace_source", "furnace_result", "furnace_modules", "player_quickbar", "player_main", "player_guns", "player_ammo", "player_armor", "player_tools", "player_vehicle", "player_trash", "god_quickbar", "god_main", "roboport_robot", "roboport_material", "robot_cargo", "robot_repair", "assembling_machine_input", "assembling_machine_output", "assembling_machine_modules", "lab_input", "lab_modules", "mining_drill_modules", "item_main", "rocket_silo_rocket", "rocket_silo_result", "rocket", "car_trunk", "car_ammo", "cargo_wagon", "turret_ammo", "beacon_modules", "character_corpse",
+                "fuel",
+                "burnt_result",
+                "chest",
+                "furnace_source",
+                "furnace_result",
+                "furnace_modules",
+                "player_quickbar",
+                "player_main",
+                "player_guns",
+                "player_ammo",
+                "player_armor",
+                "player_tools",
+                "player_vehicle",
+                "player_trash",
+                "god_quickbar",
+                "god_main",
+                "roboport_robot",
+                "roboport_material",
+                "robot_cargo",
+                "robot_repair",
+                "assembling_machine_input",
+                "assembling_machine_output",
+                "assembling_machine_modules",
+                "lab_input",
+                "lab_modules",
+                "mining_drill_modules",
+                "item_main",
+                "rocket_silo_rocket",
+                "rocket_silo_result",
+                "rocket",
+                "car_trunk",
+                "car_ammo",
+                "cargo_wagon",
+                "turret_ammo",
+                "beacon_modules",
+                "character_corpse",
             ],
         });
         this.exec_lua(`function log(x) end`);
@@ -158,7 +181,7 @@ export class FactorioModLua {
         luaL_loadbuffer(L, pkgData, pkgData.length, to_luastring("@" + fpath));
         lua.lua_pushfstring(L, to_luastring("@%s"), to_luastring(fpath));
 
-        return 2;  /* return open function and file name */
+        return 2; /* return open function and file name */
     }
 
     private init_defines(data: DefinesDef, key?: string) {
@@ -210,7 +233,11 @@ export class FactorioModLua {
         lua.lua_pop(L, 2);
     }
 
-    private find_script_in_context(path: string, quiet: boolean = false, additionalSearchPath: Array<{ modName: string, path: string }> = []): { content: string, name: string, mod: FactorioMod } | null {
+    private find_script_in_context(
+        path: string,
+        quiet: boolean = false,
+        additionalSearchPath: Array<{ modName: string; path: string }> = [],
+    ): { content: string; name: string; mod: FactorioMod } | null {
         const fpath = path.replace(/\./g, "/") + ".lua";
 
         for (const mod of this.availableContexts.concat(this.coreContext)) {

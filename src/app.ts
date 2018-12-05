@@ -49,6 +49,7 @@ async function test() {
     promises.push(pack.loadModArchive("/media/data/factorio/mods/seablock_16/ShinyIcons_0.16.20.zip"));
     promises.push(pack.loadModArchive("/media/data/factorio/mods/seablock_16/SpaceMod_0.3.12.zip"));
 
+    // noinspection TypeScriptUnresolvedVariable
     await Promise.all(promises);
 
     console.timeEnd("Load zips");

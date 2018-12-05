@@ -1,16 +1,15 @@
 import * as JSZip from "jszip";
 import * as fs from "fs";
 
-
 interface ModInfo {
-    name: string
-    title: string
-    author: string
-    version: string
-    description?: string
-    contact: string
-    homepage: string
-    dependencies: string[]
+    name: string;
+    title: string;
+    author: string;
+    version: string;
+    description?: string;
+    contact: string;
+    homepage: string;
+    dependencies: string[];
 }
 
 interface FactorioModDependency {
@@ -45,8 +44,7 @@ export class FactorioMod {
         if (debugTiming) {
             console.time(`Parse zip: ${zipPath}`);
         }
-        this.loadedZip = await new JSZip()
-            .loadAsync(data);
+        this.loadedZip = await new JSZip().loadAsync(data);
 
         this.detectToplevelFolder();
         if (debugTiming) {
@@ -56,20 +54,22 @@ export class FactorioMod {
         if (debugTiming) {
             console.time(`Decompress lua scripts: ${zipPath}`);
         }
-        await Promise.all(this.loadedZip.filter((relativePath, file) =>
-            relativePath.endsWith(".lua"),
-        ).map(async file => {
-            let name = file.name;
+        await Promise.all(
+            this.loadedZip
+                .filter((relativePath, file) => relativePath.endsWith(".lua"))
+                .map(async file => {
+                    let name = file.name;
 
-            if (name.startsWith(this.topLevelPrefix)) {
-                name = name.replace(this.topLevelPrefix, "");
-            }
+                    if (name.startsWith(this.topLevelPrefix)) {
+                        name = name.replace(this.topLevelPrefix, "");
+                    }
 
-            this.luaFiles[name] = {
-                content: await file.async("text"),
-                name,
-            };
-        }));
+                    this.luaFiles[name] = {
+                        content: await file.async("text"),
+                        name,
+                    };
+                }),
+        );
         if (debugTiming) {
             console.timeEnd(`Decompress lua scripts: ${zipPath}`);
         }
