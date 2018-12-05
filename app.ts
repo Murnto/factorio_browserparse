@@ -2,7 +2,7 @@ import "source-map-support/register";
 import "es7-object-polyfill";
 import * as JSZip from "jszip";
 import { lua_stack_trace_introspect, lua_value_to_js, push_js_object } from "./lua_utils";
-import { dumpMemUsage } from "./utils";
+import { compareVersions, dumpMemUsage } from "./utils";
 // @ts-ignore
 import fengari from "fengari";
 // @ts-ignore
@@ -437,28 +437,6 @@ end`);
         this.availableContexts.length = 0;
         this.availableContexts.push(mod);
     }
-}
-
-function compareVersions(target: string, version: string): number {
-    if (target === version) { return 0; }
-
-    const tSplit = target.split(".");
-    const vSplit = version.split(".");
-    const minLength = Math.min(tSplit.length, vSplit.length);
-
-    for (let i = 0; i < minLength; i++) {
-        const t = parseInt(tSplit[i], 10);
-        const v = parseInt(vSplit[i], 10);
-
-        if (t === v) { continue; }
-        if (t < v) { return 1; }
-        if (t > v) { return -1; }
-    }
-
-    if (tSplit.length < vSplit.length) { return 1; }
-    if (tSplit.length > vSplit.length) { return -1; }
-
-    return 0;
 }
 
 class FactorioPack {
