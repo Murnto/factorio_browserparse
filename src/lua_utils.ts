@@ -236,3 +236,27 @@ export function lua_stack_trace(L: any) {
         }
     }
 }
+
+export function mostRecentFileInStackTrace(L: any): string | undefined {
+    const stack: any = {};
+    let i = 0;
+
+    while (lua.lua_getstack(L, i++, stack) !== 0) {
+        const func = stack.i_ci.func;
+        if (!func || func.type !== 6) {
+            continue;
+        }
+
+        const { p } = func.value;
+        // const lineNo = p.lineinfo[stack.i_ci.l_savedpc - 1];
+        const source = new TextDecoder("utf-8").decode(p.source.realstring);
+
+        if (source.startsWith("@")) {
+            // console.log(`level ${i}: line=${lineNo} id=${id} p.plen=${p.p.length} source=${source}`);
+
+            return source;
+        }
+    }
+
+    return undefined;
+}

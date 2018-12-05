@@ -1,5 +1,5 @@
 import { FactorioPack } from "./FactorioPack";
-import { lua_stack_trace_introspect, push_js_object } from "./lua_utils";
+import { lua_stack_trace_introspect, mostRecentFileInStackTrace, push_js_object } from "./lua_utils";
 import { FactorioMod } from "./FactorioMod";
 import apiDefines from "./ApiDefines";
 // @ts-ignore
@@ -93,29 +93,13 @@ export class FactorioModLua {
         lua.lua_pop(L, 1);
 
         const additionalSearchPath = [];
-        const stack: any = {};
-        let i = 0;
+        const requiringFile = mostRecentFileInStackTrace(L);
 
-        while (lua.lua_getstack(L, i++, stack) !== 0) {
-            const func = stack.i_ci.func;
-            if (!func || func.type !== 6) {
-                continue;
-            }
-
-            const { p } = func.value;
-            // const lineNo = p.lineinfo[stack.i_ci.l_savedpc - 1];
-            const source = new TextDecoder("utf-8").decode(p.source.realstring);
-
-            if (source.startsWith("@")) {
-                // console.log(`level ${i}: line=${lineNo} id=${id} p.plen=${p.p.length} source=${source}`);
-
-                additionalSearchPath.push({
-                    modName: source.slice(1, source.indexOf("/")),
-                    path: source.slice(source.indexOf("/") + 1, source.lastIndexOf("/") + 1),
-                });
-
-                break;
-            }
+        if (requiringFile) {
+            additionalSearchPath.push({
+                modName: requiringFile.slice(1, requiringFile.indexOf("/")),
+                path: requiringFile.slice(requiringFile.indexOf("/") + 1, requiringFile.lastIndexOf("/") + 1),
+            });
         }
 
         // TODO find path of requiring file and also search there
