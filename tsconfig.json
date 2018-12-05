@@ -1,33 +1,31 @@
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "module": "commonjs",
-    "target": "es5",
-    "noLib": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "moduleResolution": "node",
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noImplicitAny": true,
-    "importHelpers": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "suppressImplicitAnyIndexErrors": true
-  },
-  "files": [
-    "node_modules/typescript/lib/lib.es6.d.ts",
-    "node_modules/typescript/lib/lib.es2017.object.d.ts",
-    "app.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "build",
-    "scripts",
-    "acceptance-tests",
-    "webpack",
-    "jest",
-    "src/setupTests.ts"
-  ]
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "sourceMap": true,
+        "declaration": true,
+        "outDir": "./lib",
+        "moduleResolution": "node",
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "noImplicitAny": true,
+        "importHelpers": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "suppressImplicitAnyIndexErrors": true
+    },
+    "files": [
+        "node_modules/typescript/lib/lib.es6.d.ts",
+        "node_modules/typescript/lib/lib.es2017.object.d.ts",
+        "app.ts"
+    ],
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "node_modules",
+        "lib"
+    ]
 }
