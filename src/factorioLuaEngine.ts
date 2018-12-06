@@ -1,7 +1,7 @@
-import { FactorioPack } from "./FactorioPack";
-import { lua_stack_trace_introspect, lua_value_to_js, mostRecentFileInStackTrace, push_js_object } from "./lua_utils";
-import { FactorioMod } from "./FactorioMod";
-import apiDefines from "./ApiDefines";
+import { FactorioPack } from "./factorioPack";
+import { lua_stack_trace_introspect, lua_value_to_js, mostRecentFileInStackTrace, push_js_object } from "./luaUtils";
+import { FactorioMod } from "./factorioMod";
+import apiDefines from "./apiDefines";
 // @ts-ignore
 import * as fengari from "fengari";
 // @ts-ignore
@@ -19,12 +19,12 @@ const {
 type DefinesDef = string[] | { [index: string]: DefinesDef };
 
 export class FactorioLuaEngine {
-    private L: any;
     private availableContexts: FactorioMod[] = [];
-    private coreContext!: FactorioMod;
-    private storedContextState: { [index: string]: any } = {};
+    private readonly coreContext!: FactorioMod;
     private internalLoaded: any;
-    private orderedMods: FactorioMod[];
+    private L: any;
+    private readonly orderedMods: FactorioMod[];
+    private storedContextState: { [index: string]: any } = {};
 
     constructor(p: FactorioPack) {
         this.orderedMods = p.modLoadOrder.map(k => p.mods[k]);
@@ -37,6 +37,12 @@ export class FactorioLuaEngine {
         const settings = this.loadSettings();
 
         return this.loadData(settings);
+    }
+
+    private close() {
+        this.storedContextState = {};
+        this.internalLoaded = null;
+        lua.lua_close(this.L);
     }
 
     private contextExec(context: FactorioMod, code: string) {
@@ -56,6 +62,64 @@ export class FactorioLuaEngine {
             lua_stack_trace_introspect(this.L);
             throw new Error(`Failed to run script:  ${lua.lua_tojsstring(this.L, -1)}`);
         }
+    }
+
+    private find_script_in_context(
+        path: string,
+        quiet: boolean = false,
+        additionalSearchPath: Array<{ modName: string; path: string }> = [],
+    ): { content: string; mod: FactorioMod; name: string } | null {
+        const fpath = path.replace(/\./g, "/") + ".lua";
+
+        for (const mod of this.availableContexts.concat(this.coreContext)) {
+            let searchPaths = [];
+
+            for (const addtnl of additionalSearchPath) {
+                if (mod.info.name === addtnl.modName) {
+                    searchPaths.push(addtnl.path);
+                }
+            }
+            searchPaths = searchPaths.concat(mod.luaPaths);
+
+            for (const prefix of searchPaths) {
+                const script = mod.luaFiles[prefix + fpath];
+
+                if (!quiet) {
+                    console.log(`Search for "${prefix + fpath}" in "${mod.info.name}": found=${script !== undefined}`);
+                }
+
+                if (script === undefined) {
+                    continue;
+                }
+
+                return {
+                    ...script,
+                    mod,
+                };
+            }
+        }
+
+        return null;
+    }
+
+    private hook_require() {
+        const L = this.L;
+
+        // language=Lua
+        this.execLua(`
+            package.searchers[3] = nil
+            package.searchers[4] = nil
+        `);
+
+        // TODO improve table access
+        lua.lua_getglobal(L, "package");
+        lua.lua_pushstring(L, "searchers");
+        lua.lua_gettable(L, -2);
+        lua.lua_pushnumber(L, 2);
+        lua.lua_pushcfunction(L, this.lua_require.bind(this));
+        lua.lua_settable(L, -3);
+
+        lua.lua_pop(L, 2);
     }
 
     private init() {
@@ -96,49 +160,6 @@ export class FactorioLuaEngine {
         lua.lua_setglobal(L, "mods");
     }
 
-    private close() {
-        this.storedContextState = {};
-        this.internalLoaded = null;
-        lua.lua_close(this.L);
-    }
-
-    private lua_require(L: any) {
-        const path = lua.lua_tojsstring(L, -1);
-        // console.log(`require("${path}")`);
-
-        lua.lua_pop(L, 1);
-
-        const additionalSearchPath = [];
-        const requiringFile = mostRecentFileInStackTrace(L);
-
-        if (requiringFile) {
-            additionalSearchPath.push({
-                modName: requiringFile.slice(1, requiringFile.indexOf("/")),
-                path: requiringFile.slice(requiringFile.indexOf("/") + 1, requiringFile.lastIndexOf("/") + 1),
-            });
-        }
-
-        const result = this.find_script_in_context(path, true, additionalSearchPath);
-
-        if (result === null) {
-            return 0;
-        }
-
-        const content = result.content;
-        const fpath = result.mod.info.name + "/" + path.replace(/\./g, "/") + ".lua";
-
-        if (content === null) {
-            return 0;
-        }
-
-        const pkgData = to_luastring(content);
-
-        luaL_loadbuffer(L, pkgData, pkgData.length, to_luastring("@" + fpath));
-        lua.lua_pushfstring(L, to_luastring("@%s"), to_luastring(fpath));
-
-        return 2; /* return open function and file name */
-    }
-
     private init_defines(data: DefinesDef, key?: string) {
         const L = this.L;
 
@@ -169,69 +190,34 @@ export class FactorioLuaEngine {
         lua.lua_pop(L, 1);
     }
 
-    private hook_require() {
-        const L = this.L;
+    private loadData(settings: any): any {
+        this.init();
+
+        push_js_object(this.L, settings);
+        lua.lua_setglobal(this.L, "settings");
 
         // language=Lua
-        this.execLua(`
-            package.searchers[3] = nil
-            package.searchers[4] = nil
-        `);
+        this.contextExec(
+            this.coreContext,
+            `
+                require('dataloader')
+                require('data')
+            `,
+        );
 
-        // TODO improve table access
-        lua.lua_getglobal(L, "package");
-        lua.lua_pushstring(L, "searchers");
-        lua.lua_gettable(L, -2);
-        lua.lua_pushnumber(L, 2);
-        lua.lua_pushcfunction(L, this.lua_require.bind(this));
-        lua.lua_settable(L, -3);
+        this.runModsScriptStage(this.orderedMods, "data");
+        this.runModsScriptStage(this.orderedMods, "data-updates");
+        this.runModsScriptStage(this.orderedMods, "data-final-fixes");
 
-        lua.lua_pop(L, 2);
-    }
+        lua.lua_getglobal(this.L, "data");
+        lua.lua_pushstring(this.L, "raw");
+        lua.lua_gettable(this.L, -2);
 
-    private find_script_in_context(
-        path: string,
-        quiet: boolean = false,
-        additionalSearchPath: Array<{ modName: string; path: string }> = [],
-    ): { content: string; name: string; mod: FactorioMod } | null {
-        const fpath = path.replace(/\./g, "/") + ".lua";
+        const data = lua_value_to_js(this.L, -1);
+        lua.lua_pop(this.L, 1);
+        this.close();
 
-        for (const mod of this.availableContexts.concat(this.coreContext)) {
-            let searchPaths = [];
-
-            for (const addtnl of additionalSearchPath) {
-                if (mod.info.name === addtnl.modName) {
-                    searchPaths.push(addtnl.path);
-                }
-            }
-            searchPaths = searchPaths.concat(mod.luaPaths);
-
-            for (const prefix of searchPaths) {
-                const script = mod.luaFiles[prefix + fpath];
-
-                if (!quiet) {
-                    console.log(`Search for "${prefix + fpath}" in "${mod.info.name}": found=${script !== undefined}`);
-                }
-
-                if (script !== undefined) {
-                    return {
-                        ...script,
-                        mod,
-                    };
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private runModsScriptStage(mods: FactorioMod[], name: string) {
-        for (const mod of mods) {
-            if (!!mod.luaFiles[name + ".lua"]) {
-                // language=Lua
-                this.contextExec(mod, `require('${name}')`);
-            }
-        }
+        return data;
     }
 
     private loadSettings(): any {
@@ -271,34 +257,50 @@ export class FactorioLuaEngine {
         return settings;
     }
 
-    private loadData(settings: any): any {
-        this.init();
+    private lua_require(L: any) {
+        const path = lua.lua_tojsstring(L, -1);
+        // console.log(`require("${path}")`);
 
-        push_js_object(this.L, settings);
-        lua.lua_setglobal(this.L, "settings");
+        lua.lua_pop(L, 1);
 
-        // language=Lua
-        this.contextExec(
-            this.coreContext,
-            `
-                require('dataloader')
-                require('data')
-            `,
-        );
+        const additionalSearchPath = [];
+        const requiringFile = mostRecentFileInStackTrace(L);
 
-        this.runModsScriptStage(this.orderedMods, "data");
-        this.runModsScriptStage(this.orderedMods, "data-updates");
-        this.runModsScriptStage(this.orderedMods, "data-final-fixes");
+        if (requiringFile) {
+            additionalSearchPath.push({
+                modName: requiringFile.slice(1, requiringFile.indexOf("/")),
+                path: requiringFile.slice(requiringFile.indexOf("/") + 1, requiringFile.lastIndexOf("/") + 1),
+            });
+        }
 
-        lua.lua_getglobal(this.L, "data");
-        lua.lua_pushstring(this.L, "raw");
-        lua.lua_gettable(this.L, -2);
+        const result = this.find_script_in_context(path, true, additionalSearchPath);
 
-        const data = lua_value_to_js(this.L, -1);
-        lua.lua_pop(this.L, 1);
-        this.close();
+        if (result === null) {
+            return 0;
+        }
 
-        return data;
+        const content = result.content;
+        const fpath = result.mod.info.name + "/" + path.replace(/\./g, "/") + ".lua";
+
+        if (content === null) {
+            return 0;
+        }
+
+        const pkgData = to_luastring(content);
+
+        luaL_loadbuffer(L, pkgData, pkgData.length, to_luastring("@" + fpath));
+        lua.lua_pushfstring(L, to_luastring("@%s"), to_luastring(fpath));
+
+        return 2; /* return open function and file name */
+    }
+
+    private runModsScriptStage(mods: FactorioMod[], name: string) {
+        for (const mod of mods) {
+            if (!!mod.luaFiles[name + ".lua"]) {
+                // language=Lua
+                this.contextExec(mod, `require('${name}')`);
+            }
+        }
     }
 
     private setModContext(mod: FactorioMod) {

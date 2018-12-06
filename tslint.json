@@ -1,0 +1,53 @@
+{
+    "extends": [
+        "tslint:recommended",
+        "tslint-config-prettier",
+        "tslint-consistent-codestyle"
+    ],
+    "linterOptions": {
+        "exclude": [
+            "node_modules/**/*.ts"
+        ]
+    },
+    "rules": {
+        "no-collapsible-if": true,
+        "early-exit": true,
+        "member-ordering": [
+            true,
+            {
+                "order": [
+                    "public-static-field",
+                    "public-instance-field",
+                    "private-static-field",
+                    "private-instance-field",
+                    "constructor",
+                    "public-instance-method",
+                    "protected-instance-method",
+                    "private-instance-method"
+                ],
+                "alphabetize": true
+            }
+        ],
+        "variable-name": [
+            true,
+            "check-format"
+        ],
+        "file-name-casing": [
+            true,
+            "camel-case"
+        ],
+        "no-unnecessary-else": true,
+        "class-name": true,
+        "no-return-undefined": true,
+        "no-unnecessary-type-annotation": true,
+        "no-unused": true,
+        "no-var-before-return": true,
+        "object-literal-sort-keys": [
+            true,
+            "shorthand-first"
+        ],
+        "no-console": false,
+        "interface-name": false,
+        "ordered-imports": false
+    }
+}

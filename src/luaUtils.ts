@@ -166,7 +166,7 @@ export function lua_value_to_js(L: any, index: number): any {
             return table_to_object(L, index);
         case lua.LUA_TFUNCTION:
             return "[[[Function]]]";
-            throw new Error(`Unhandled type: "LUA_TFUNCTION"`);
+        // throw new Error(`Unhandled type: "LUA_TFUNCTION"`);
         case lua.LUA_TUSERDATA:
             throw new Error(`Unhandled type: "LUA_TUSERDATA"`);
         case lua.LUA_TTHREAD:
@@ -261,5 +261,5 @@ export function mostRecentFileInStackTrace(L: any): string | undefined {
         }
     }
 
-    return undefined;
+    return;
 }

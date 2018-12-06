@@ -4,3 +4,6 @@ node_modules/
 *.json
 .idea/
 yarn.lock
+!package.json
+!tsconfig.json
+!tslint.json

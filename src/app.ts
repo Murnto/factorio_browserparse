@@ -1,7 +1,7 @@
 import "source-map-support/register";
 import "es7-object-polyfill";
 import { dumpMemUsage } from "./utils";
-import { FactorioPack } from "./FactorioPack";
+import { FactorioPack } from "./factorioPack";
 
 async function test() {
     const pack = new FactorioPack();

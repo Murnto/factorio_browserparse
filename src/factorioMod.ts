@@ -2,48 +2,79 @@ import * as JSZip from "jszip";
 import * as fs from "fs";
 
 interface ModInfo {
+    author: string;
+    contact: string;
+    dependencies: string[];
+    description?: string;
+    homepage: string;
     name: string;
     title: string;
-    author: string;
     version: string;
-    description?: string;
-    contact: string;
-    homepage: string;
-    dependencies: string[];
 }
 
 interface FactorioModDependency {
-    optional: boolean;
     name: string;
-    version?: string;
+    optional: boolean;
     relation?: string;
+    version?: string;
 }
 
 interface LuaScript {
-    name: string;
     content: string;
+    name: string;
 }
 
 interface OutputByType {
-    base64: string;
-    text: string;
-    binarystring: string;
     array: number[];
-    uint8array: Uint8Array;
     arraybuffer: ArrayBuffer;
+    base64: string;
+    binarystring: string;
     blob: Blob;
     nodebuffer: Buffer;
+    text: string;
+    uint8array: Uint8Array;
 }
 
 type OutputType = keyof OutputByType;
 
 export class FactorioMod {
+    public dependencies!: FactorioModDependency[];
     public info!: ModInfo;
     public luaFiles: { [index: string]: LuaScript } = {};
-    public dependencies!: FactorioModDependency[];
     public luaPaths: string[] = [""];
     private loadedZip!: JSZip | null;
     private topLevelPrefix: string = "";
+
+    // noinspection TypeScriptUnresolvedVariable
+    public async getFiles<T extends OutputType>(
+        predicate: (relativePath: string, file: JSZip.JSZipObject) => boolean,
+        type: T,
+        purge: boolean = true,
+    ): Promise<{ [index: string]: { content: OutputByType[T]; name: string } }> {
+        const files = {};
+
+        // noinspection TypeScriptUnresolvedVariable
+        await Promise.all(
+            this.loadedZip!.filter(predicate).map(async file => {
+                let name = file.name;
+
+                if (name.startsWith(this.topLevelPrefix)) {
+                    name = name.replace(this.topLevelPrefix, "");
+                }
+
+                files[name] = {
+                    name,
+                    content: await file.async(type),
+                };
+
+                if (purge) {
+                    delete (file as any)._data;
+                }
+            }),
+        );
+
+        return files;
+    }
 
     public async load(zipPath: string, debugTiming: boolean = false) {
         if (debugTiming) {
@@ -82,35 +113,17 @@ export class FactorioMod {
         this.parseDependencies();
     }
 
-    // noinspection TypeScriptUnresolvedVariable
-    public async getFiles<T extends OutputType>(
-        predicate: (relativePath: string, file: JSZip.JSZipObject) => boolean,
-        type: T,
-        purge: boolean = true,
-    ): Promise<{ [index: string]: { name: string; content: OutputByType[T] } }> {
-        const files = {};
+    private detectToplevelFolder() {
+        // let found: JSZip.JSZipObject | null = null;
 
-        // noinspection TypeScriptUnresolvedVariable
-        await Promise.all(
-            this.loadedZip!.filter(predicate).map(async file => {
-                let name = file.name;
+        for (const file of Object.values(this.loadedZip!.files)) {
+            if (!(file.name.endsWith("info.json") && file.name.indexOf("/") === file.name.lastIndexOf("/"))) {
+                continue;
+            }
 
-                if (name.startsWith(this.topLevelPrefix)) {
-                    name = name.replace(this.topLevelPrefix, "");
-                }
-
-                files[name] = {
-                    content: await file.async(type),
-                    name,
-                };
-
-                if (purge) {
-                    delete (file as any)._data;
-                }
-            }),
-        );
-
-        return files;
+            this.topLevelPrefix = file.name.slice(0, file.name.lastIndexOf("info.json"));
+            this.loadedZip = this.loadedZip!.folder(this.topLevelPrefix);
+        }
     }
 
     private parseDependencies() {
@@ -125,29 +138,16 @@ export class FactorioMod {
         for (const dep of this.info.dependencies) {
             const match = dep.match(depPattern);
 
-            if (match !== null) {
-                this.dependencies.push({
-                    name: match[2],
-                    optional: match[1] === "?",
-                    relation: match[3],
-                    version: match[4],
-                });
-            } else {
+            if (match === null) {
                 throw new Error(`Failed to parse dependency "${dep}"`);
             }
-        }
-    }
 
-    private detectToplevelFolder() {
-        // let found: JSZip.JSZipObject | null = null;
-
-        for (const file of Object.values(this.loadedZip!.files)) {
-            if (file.name.endsWith("info.json") && file.name.indexOf("/") === file.name.lastIndexOf("/")) {
-                this.topLevelPrefix = file.name.slice(0, file.name.lastIndexOf("info.json"));
-
-                // console.info(`Using toplevel folder ${this.topLevelPrefix}`);
-                this.loadedZip = this.loadedZip!.folder(this.topLevelPrefix);
-            }
+            this.dependencies.push({
+                name: match[2],
+                optional: match[1] === "?",
+                relation: match[3],
+                version: match[4],
+            });
         }
     }
 }
