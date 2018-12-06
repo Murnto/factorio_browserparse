@@ -33,6 +33,9 @@ export function push_js_object(L: any, obj: any | number) {
     } else if (typeof obj === "number") {
         lua.lua_pushnumber(L, obj);
         // console.log('pushnumber', obj);
+    } else if (typeof obj === "boolean") {
+        lua.lua_pushboolean(L, obj);
+        // console.log('lua_pushboolean', obj);
     } else {
         throw new Error(`Unknown object type: ${typeof obj}: "${obj}"`);
     }
