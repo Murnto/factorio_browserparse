@@ -4,6 +4,8 @@ import { FactorioMod } from "./FactorioMod";
 import { FactorioLuaEngine } from "./FactorioLuaEngine";
 // @ts-ignore
 import { lua } from "fengari";
+import * as ini from "ini";
+import merge = require("lodash.merge");
 
 export class FactorioPack {
     public mods: { [index: string]: FactorioMod } = {};
@@ -106,5 +108,33 @@ export class FactorioPack {
         dumpMemUsage("Before gc");
         global.gc();
         dumpMemUsage("After gc");
+    }
+
+    public async loadLocale(targetLocale?: string): Promise<{ [lang: string]: { [section: string]: { [key: string]: string } } }> {
+        const locales = {};
+
+        for (const name of this.modLoadOrder) {
+            const mod = this.mods[name];
+
+            const localeFiles = await mod.getFiles(p => p.indexOf("locale/") === 0 && p.endsWith(".cfg"), "text");
+            const filenames = Object.keys(localeFiles);
+            filenames.sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }));
+
+            for (const fn of filenames) {
+                const locIdx = fn.indexOf("locale/") + 7;
+                const language = fn.slice(locIdx, fn.indexOf("/", locIdx));
+
+                if (targetLocale && targetLocale !== language) {
+                    continue;
+                }
+                if (!locales[language]) {
+                    locales[language] = {};
+                }
+
+                merge(locales[language], ini.parse(localeFiles[fn].content));
+            }
+        }
+
+        return locales;
     }
 }

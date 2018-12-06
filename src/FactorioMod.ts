@@ -76,8 +76,8 @@ export class FactorioMod {
         const infoString = await infoFile.async("text");
         this.info = JSON.parse(infoString);
 
-        (this.loadedZip as any).files = null;
-        this.loadedZip = null;
+        // (this.loadedZip as any).files = null;
+        // this.loadedZip = null;
 
         this.parseDependencies();
     }

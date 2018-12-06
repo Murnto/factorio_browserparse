@@ -65,6 +65,11 @@ async function test() {
     console.time("pack.loadMods()");
     await pack.loadMods();
     console.timeEnd("pack.loadMods()");
+    console.time("pack.loadLocale()");
+    await pack.loadLocale("en");
+    console.timeEnd("pack.loadLocale()");
+    dumpMemUsage("After locale");
+
 
     dumpMemUsage("After dump");
 }
