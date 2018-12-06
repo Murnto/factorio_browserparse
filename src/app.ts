@@ -53,25 +53,25 @@ async function test() {
     await Promise.all(promises);
 
     console.timeEnd("Load zips");
-
     dumpMemUsage("After basic load");
 
     console.time("pack.resolveMods()");
     await pack.resolveMods();
     console.timeEnd("pack.resolveMods()");
-
     dumpMemUsage("After resolve");
 
-    console.time("pack.loadMods()");
-    await pack.loadMods();
-    console.timeEnd("pack.loadMods()");
     console.time("pack.loadLocale()");
     await pack.loadLocale("en");
     console.timeEnd("pack.loadLocale()");
     dumpMemUsage("After locale");
 
+    console.time("pack.loadData()");
+    await pack.loadData();
+    console.timeEnd("pack.loadData()");
+    dumpMemUsage("After data");
 
-    dumpMemUsage("After dump");
+    global.gc();
+    dumpMemUsage("After gc");
 }
 
 test();

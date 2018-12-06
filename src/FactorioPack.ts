@@ -95,7 +95,7 @@ export class FactorioPack {
         }
     }
 
-    public loadMods() {
+    public loadData() {
         // TODO load locale
 
         const factorioLua = new FactorioLuaEngine(this);
