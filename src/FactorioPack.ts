@@ -1,4 +1,4 @@
-import { compareVersions, dumpMemUsage } from "./utils";
+import { compareVersions } from "./utils";
 import * as fs from "fs";
 import { FactorioMod } from "./FactorioMod";
 import { FactorioLuaEngine } from "./FactorioLuaEngine";
@@ -96,18 +96,9 @@ export class FactorioPack {
     }
 
     public loadData() {
-        // TODO load locale
-
-        const factorioLua = new FactorioLuaEngine(this);
-        dumpMemUsage("After lua init");
-        const data = factorioLua.load();
-        dumpMemUsage("After mod load");
+        const data = new FactorioLuaEngine(this).load();
 
         fs.writeFileSync("data.json", JSON.stringify(data));
-
-        dumpMemUsage("Before gc");
-        global.gc();
-        dumpMemUsage("After gc");
     }
 
     public async loadLocale(targetLocale?: string): Promise<{ [lang: string]: { [section: string]: { [key: string]: string } } }> {

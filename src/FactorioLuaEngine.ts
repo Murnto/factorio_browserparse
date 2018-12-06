@@ -100,7 +100,6 @@ export class FactorioLuaEngine {
         this.storedContextState = {};
         this.internalLoaded = null;
         lua.lua_close(this.L);
-        console.log("bye");
     }
 
     private lua_require(L: any) {
@@ -303,7 +302,7 @@ export class FactorioLuaEngine {
     }
 
     private setModContext(mod: FactorioMod) {
-        console.log(`[Context] Switch to ${mod.info.name}`);
+        // console.log(`[Context] Switch to ${mod.info.name}`);
 
         if (this.availableContexts.length !== 0) {
             // save mod context state
