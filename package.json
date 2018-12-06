@@ -2,10 +2,16 @@
     "name": "browserparse",
     "version": "0.0.0",
     "private": true,
+    "main": "lib/app.js",
+    "types": "lib/app.d.ts",
     "scripts": {
         "build": "tsc",
         "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
-        "lint": "tslint -p tsconfig.json"
+        "lint": "tslint -p tsconfig.json",
+        "preversion" : "npm run lint",
+        "prepublishOnly" : "npm test && npm run lint",
+        "prepare" : "npm run build",
+        "version" : "npm run format && git add -A src"
     },
     "dependencies": {
         "fengari": "^0.1.4",
@@ -22,5 +28,6 @@
         "tslint": "^5.11.0",
         "tslint-config-prettier": "^1.17.0",
         "typescript": "^3.2.1"
-    }
+    },
+    "files": ["lib/**/*"]
 }
