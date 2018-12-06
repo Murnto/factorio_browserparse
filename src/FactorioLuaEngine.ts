@@ -1,5 +1,5 @@
 import { FactorioPack } from "./FactorioPack";
-import { lua_stack_trace_introspect, mostRecentFileInStackTrace, push_js_object } from "./lua_utils";
+import { lua_stack_trace_introspect, lua_value_to_js, mostRecentFileInStackTrace, push_js_object } from "./lua_utils";
 import { FactorioMod } from "./FactorioMod";
 import apiDefines from "./ApiDefines";
 // @ts-ignore
@@ -18,28 +18,45 @@ const {
 
 type DefinesDef = string[] | { [index: string]: DefinesDef };
 
-export class FactorioModLua {
+export class FactorioLuaEngine {
     private L: any;
     private availableContexts: FactorioMod[] = [];
     private coreContext!: FactorioMod;
     private storedContextState: { [index: string]: any } = {};
     private internalLoaded: any;
+    private orderedMods: FactorioMod[];
 
-    public load_mods(p: FactorioPack, mods: FactorioMod[]) {
-        const L = this.L;
+    constructor(p: FactorioPack) {
+        this.orderedMods = p.modLoadOrder.map(k => p.mods[k]);
 
-        this.coreContext = mods.splice(0, 1)[0];
+        this.coreContext = this.orderedMods.splice(0, 1)[0];
         this.coreContext.luaPaths.push("lualib/");
-        this.setModContext(this.coreContext);
+    }
 
-        // language=Lua
-        this.exec_lua(`
-            require('dataloader')
-            require('data')
-        `);
+    public load(): any {
+        this.init();
 
-        this.loadSettings(p, mods);
-        this.loadData(p, mods);
+        try {
+            this.setModContext(this.coreContext);
+
+            // language=Lua
+            this.exec_lua(`
+                require('dataloader')
+                require('data')
+            `);
+
+            this.loadSettings();
+            this.loadData();
+
+
+            lua.lua_getglobal(this.L, "data");
+            lua.lua_pushstring(this.L, "raw");
+            lua.lua_gettable(this.L, -2);
+
+            return lua_value_to_js(this.L, -1);
+        } finally {
+            this.close();
+        }
     }
 
     public exec_lua(code: string) {
@@ -83,7 +100,7 @@ export class FactorioModLua {
         this.internalLoaded = luaH_getstr(L.l_G.l_registry.value, luaS_newliteral(L, "_LOADED"));
 
         const modsList = {};
-        for (const mod of mods) {
+        for (const mod of this.orderedMods) {
             modsList[mod.info.name] = mod.info.version;
         }
         push_js_object(L, modsList);
@@ -231,13 +248,13 @@ export class FactorioModLua {
         }
     }
 
-    private loadSettings(p: FactorioPack, mods: FactorioMod[]) {
+    private loadSettings() {
         // language=Lua
         this.exec_lua(`settings = { startup = {} }`);
 
-        this.runModsScriptStage(mods, "settings");
-        this.runModsScriptStage(mods, "settings-updates");
-        this.runModsScriptStage(mods, "settings-final-fixes");
+        this.runModsScriptStage(this.orderedMods, "settings");
+        this.runModsScriptStage(this.orderedMods, "settings-updates");
+        this.runModsScriptStage(this.orderedMods, "settings-final-fixes");
 
         // language=Lua
         this.exec_lua(`
@@ -259,10 +276,10 @@ export class FactorioModLua {
         console.log("Settings added to startup");
     }
 
-    private loadData(p: FactorioPack, mods: FactorioMod[]) {
-        this.runModsScriptStage(mods, "data");
-        this.runModsScriptStage(mods, "data-updates");
-        this.runModsScriptStage(mods, "data-final-fixes");
+    private loadData() {
+        this.runModsScriptStage(this.orderedMods, "data");
+        this.runModsScriptStage(this.orderedMods, "data-updates");
+        this.runModsScriptStage(this.orderedMods, "data-final-fixes");
     }
 
     private setModContext(mod: FactorioMod) {

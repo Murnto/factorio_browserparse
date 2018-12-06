@@ -1,8 +1,7 @@
 import { compareVersions, dumpMemUsage } from "./utils";
-import { lua_value_to_js } from "./lua_utils";
 import * as fs from "fs";
 import { FactorioMod } from "./FactorioMod";
-import { FactorioModLua } from "./FactorioModLua";
+import { FactorioLuaEngine } from "./FactorioLuaEngine";
 // @ts-ignore
 import { lua } from "fengari";
 
@@ -97,21 +96,12 @@ export class FactorioPack {
     public loadMods() {
         // TODO load locale
 
-        const mods = this.modLoadOrder.map(k => this.mods[k]);
-
-        const factorioLua = new FactorioModLua();
-        factorioLua.init();
+        const factorioLua = new FactorioLuaEngine(this);
         dumpMemUsage("After lua init");
-        factorioLua.load_mods(this, mods);
-
+        const data = factorioLua.load();
         dumpMemUsage("After mod load");
 
-        lua.lua_getglobal(factorioLua.L, "data");
-        const jsonData = JSON.stringify(lua_value_to_js(factorioLua.L, -1));
-
-        fs.writeFileSync("data.json", jsonData);
-
-        factorioLua.close();
+        fs.writeFileSync("data.json", JSON.stringify(data));
 
         dumpMemUsage("Before gc");
         global.gc();
