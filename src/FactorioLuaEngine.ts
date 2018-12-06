@@ -34,35 +34,24 @@ export class FactorioLuaEngine {
     }
 
     public load(): any {
-        this.init();
+        const settings = this.loadSettings();
 
-        try {
-            this.setModContext(this.coreContext);
-
-            // language=Lua
-            this.exec_lua(`
-                require('dataloader')
-                require('data')
-            `);
-
-            this.loadSettings();
-            this.loadData();
-
-
-            lua.lua_getglobal(this.L, "data");
-            lua.lua_pushstring(this.L, "raw");
-            lua.lua_gettable(this.L, -2);
-
-            return lua_value_to_js(this.L, -1);
-        } finally {
-            this.close();
-        }
+        return this.loadData(settings);
     }
 
-    public exec_lua(code: string) {
+    private contextExec(context: FactorioMod, code: string) {
+        if (!this.availableContexts || this.availableContexts[0] !== context) {
+            this.setModContext(context);
+        }
+
+        return this.execLua(code);
+    }
+
+    private execLua(code: string) {
         luaL_loadstring(this.L, to_luastring(code));
-        // lua.lua_resume(this.L, null, 0)
+
         const result = lua.lua_pcall(this.L, 0, lua.LUA_MULTRET, 0);
+
         if (result) {
             lua_stack_trace_introspect(this.L);
             throw new Error(`Failed to run script:  ${lua.lua_tojsstring(this.L, -1)}`);
@@ -82,7 +71,7 @@ export class FactorioLuaEngine {
         this.init_defines(apiDefines);
 
         // language=Lua
-        this.exec_lua(`
+        this.execLua(`
             function log(x)
             end
 
@@ -185,7 +174,7 @@ export class FactorioLuaEngine {
         const L = this.L;
 
         // language=Lua
-        this.exec_lua(`
+        this.execLua(`
             package.searchers[3] = nil
             package.searchers[4] = nil
         `);
@@ -240,27 +229,29 @@ export class FactorioLuaEngine {
     private runModsScriptStage(mods: FactorioMod[], name: string) {
         for (const mod of mods) {
             if (!!mod.luaFiles[name + ".lua"]) {
-                this.setModContext(mod);
-
                 // language=Lua
-                this.exec_lua(`require('${name}')`);
+                this.contextExec(mod, `require('${name}')`);
             }
         }
     }
 
-    private loadSettings() {
+    private loadSettings(): any {
+        this.init();
+
         // language=Lua
-        this.exec_lua(`settings = { startup = {} }`);
+        this.contextExec(this.coreContext, `require('dataloader')`);
 
         this.runModsScriptStage(this.orderedMods, "settings");
         this.runModsScriptStage(this.orderedMods, "settings-updates");
         this.runModsScriptStage(this.orderedMods, "settings-final-fixes");
 
         // language=Lua
-        this.exec_lua(`
+        this.execLua(`
             function string.ends(String, End)
                 return End == '' or string.sub(String, -string.len(End)) == End
             end
+
+            settings = { startup = {} }
 
             for type, t_val in pairs(data.raw) do
                 if string.ends(type, '-setting') then
@@ -273,13 +264,42 @@ export class FactorioLuaEngine {
             end
         `);
 
-        console.log("Settings added to startup");
+        lua.lua_getglobal(this.L, "settings");
+        const settings = lua_value_to_js(this.L, -1);
+        lua.lua_pop(this.L, 1);
+        this.close();
+
+        return settings;
     }
 
-    private loadData() {
+    private loadData(settings: any): any {
+        this.init();
+
+        push_js_object(this.L, settings);
+        lua.lua_setglobal(this.L, "settings");
+
+        // language=Lua
+        this.contextExec(
+            this.coreContext,
+            `
+                require('dataloader')
+                require('data')
+            `,
+        );
+
         this.runModsScriptStage(this.orderedMods, "data");
         this.runModsScriptStage(this.orderedMods, "data-updates");
         this.runModsScriptStage(this.orderedMods, "data-final-fixes");
+
+        lua.lua_getglobal(this.L, "data");
+        lua.lua_pushstring(this.L, "raw");
+        lua.lua_gettable(this.L, -2);
+
+        const data = lua_value_to_js(this.L, -1);
+        lua.lua_pop(this.L, 1);
+        this.close();
+
+        return data;
     }
 
     private setModContext(mod: FactorioMod) {
