@@ -24,6 +24,19 @@ interface LuaScript {
     content: string;
 }
 
+interface OutputByType {
+    base64: string;
+    text: string;
+    binarystring: string;
+    array: number[];
+    uint8array: Uint8Array;
+    arraybuffer: ArrayBuffer;
+    blob: Blob;
+    nodebuffer: Buffer;
+}
+
+type OutputType = keyof OutputByType;
+
 export class FactorioMod {
     public info!: ModInfo;
     public luaFiles: { [index: string]: LuaScript } = {};
@@ -54,22 +67,7 @@ export class FactorioMod {
         if (debugTiming) {
             console.time(`Decompress lua scripts: ${zipPath}`);
         }
-        await Promise.all(
-            this.loadedZip
-                .filter((relativePath, file) => relativePath.endsWith(".lua"))
-                .map(async file => {
-                    let name = file.name;
-
-                    if (name.startsWith(this.topLevelPrefix)) {
-                        name = name.replace(this.topLevelPrefix, "");
-                    }
-
-                    this.luaFiles[name] = {
-                        content: await file.async("text"),
-                        name,
-                    };
-                }),
-        );
+        this.luaFiles = await this.getFiles(relativePath => relativePath.endsWith(".lua"), "text");
         if (debugTiming) {
             console.timeEnd(`Decompress lua scripts: ${zipPath}`);
         }
@@ -82,6 +80,37 @@ export class FactorioMod {
         this.loadedZip = null;
 
         this.parseDependencies();
+    }
+
+    // noinspection TypeScriptUnresolvedVariable
+    public async getFiles<T extends OutputType>(
+        predicate: (relativePath: string, file: JSZip.JSZipObject) => boolean,
+        type: T,
+        purge: boolean = true,
+    ): Promise<{ [index: string]: { name: string; content: OutputByType[T] } }> {
+        const files = {};
+
+        // noinspection TypeScriptUnresolvedVariable
+        await Promise.all(
+            this.loadedZip!.filter(predicate).map(async file => {
+                let name = file.name;
+
+                if (name.startsWith(this.topLevelPrefix)) {
+                    name = name.replace(this.topLevelPrefix, "");
+                }
+
+                files[name] = {
+                    content: await file.async(type),
+                    name,
+                };
+
+                if (purge) {
+                    delete (file as any)._data;
+                }
+            }),
+        );
+
+        return files;
     }
 
     private parseDependencies() {
