@@ -19,13 +19,40 @@ const {
 type DefinesDef = string[] | { [index: string]: DefinesDef };
 
 export class FactorioModLua {
-    public L: any;
+    private L: any;
     private availableContexts: FactorioMod[] = [];
     private coreContext!: FactorioMod;
     private storedContextState: { [index: string]: any } = {};
     private internalLoaded: any;
 
-    public init() {
+    public load_mods(p: FactorioPack, mods: FactorioMod[]) {
+        const L = this.L;
+
+        this.coreContext = mods.splice(0, 1)[0];
+        this.coreContext.luaPaths.push("lualib/");
+        this.setModContext(this.coreContext);
+
+        // language=Lua
+        this.exec_lua(`
+            require('dataloader')
+            require('data')
+        `);
+
+        this.loadSettings(p, mods);
+        this.loadData(p, mods);
+    }
+
+    public exec_lua(code: string) {
+        luaL_loadstring(this.L, to_luastring(code));
+        // lua.lua_resume(this.L, null, 0)
+        const result = lua.lua_pcall(this.L, 0, lua.LUA_MULTRET, 0);
+        if (result) {
+            lua_stack_trace_introspect(this.L);
+            throw new Error(`Failed to run script:  ${lua.lua_tojsstring(this.L, -1)}`);
+        }
+    }
+
+    private init() {
         const L = (this.L = luaL_newstate());
         lua.lua_checkstack(this.L, 100);
         luaL_openlibs(L);
@@ -54,10 +81,6 @@ export class FactorioModLua {
         this.hook_require();
 
         this.internalLoaded = luaH_getstr(L.l_G.l_registry.value, luaS_newliteral(L, "_LOADED"));
-    }
-
-    public load_mods(p: FactorioPack, mods: FactorioMod[]) {
-        const L = this.L;
 
         const modsList = {};
         for (const mod of mods) {
@@ -65,32 +88,9 @@ export class FactorioModLua {
         }
         push_js_object(L, modsList);
         lua.lua_setglobal(L, "mods");
-
-        this.coreContext = mods.splice(0, 1)[0];
-        this.coreContext.luaPaths.push("lualib/");
-        this.setModContext(this.coreContext);
-
-        // language=Lua
-        this.exec_lua(`
-            require('dataloader')
-            require('data')
-        `);
-
-        this.loadSettings(p, mods);
-        this.loadData(p, mods);
     }
 
-    public exec_lua(code: string) {
-        luaL_loadstring(this.L, to_luastring(code));
-        // lua.lua_resume(this.L, null, 0)
-        const result = lua.lua_pcall(this.L, 0, lua.LUA_MULTRET, 0);
-        if (result) {
-            lua_stack_trace_introspect(this.L);
-            throw new Error(`Failed to run script:  ${lua.lua_tojsstring(this.L, -1)}`);
-        }
-    }
-
-    public close() {
+    private close() {
         this.storedContextState = {};
         this.internalLoaded = null;
         lua.lua_close(this.L);
