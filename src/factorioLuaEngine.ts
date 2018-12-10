@@ -64,11 +64,7 @@ export class FactorioLuaEngine {
         }
     }
 
-    private find_script_in_context(
-        path: string,
-        quiet: boolean = false,
-        additionalSearchPath: Array<{ modName: string; path: string }> = [],
-    ): { content: string; mod: FactorioMod; name: string } | null {
+    private findScriptInContext(path: string, quiet: boolean = false, additionalSearchPath: Array<{ modName: string; path: string }> = []): { content: string; mod: FactorioMod; name: string } | null {
         const fpath = path.replace(/\./g, "/") + ".lua";
 
         for (const mod of this.availableContexts.concat(this.coreContext)) {
@@ -102,7 +98,7 @@ export class FactorioLuaEngine {
         return null;
     }
 
-    private hook_require() {
+    private hookRequire() {
         const L = this.L;
 
         // language=Lua
@@ -116,7 +112,7 @@ export class FactorioLuaEngine {
         lua.lua_pushstring(L, "searchers");
         lua.lua_gettable(L, -2);
         lua.lua_pushnumber(L, 2);
-        lua.lua_pushcfunction(L, this.lua_require.bind(this));
+        lua.lua_pushcfunction(L, this.luaRequire.bind(this));
         lua.lua_settable(L, -3);
 
         lua.lua_pop(L, 2);
@@ -132,7 +128,7 @@ export class FactorioLuaEngine {
             return 1;
         });
 
-        this.init_defines(apiDefines);
+        this.initDefines(apiDefines);
 
         // language=Lua
         this.execLua(`
@@ -148,7 +144,7 @@ export class FactorioLuaEngine {
             end
         `);
 
-        this.hook_require();
+        this.hookRequire();
 
         this.internalLoaded = luaH_getstr(L.l_G.l_registry.value, luaS_newliteral(L, "_LOADED"));
 
@@ -160,7 +156,7 @@ export class FactorioLuaEngine {
         lua.lua_setglobal(L, "mods");
     }
 
-    private init_defines(data: DefinesDef, key?: string) {
+    private initDefines(data: DefinesDef, key?: string) {
         const L = this.L;
 
         if (key === undefined) {
@@ -183,7 +179,7 @@ export class FactorioLuaEngine {
                 lua.lua_pushvalue(L, -2); // duplicate the new table
                 lua.lua_rawset(L, -4);
 
-                this.init_defines(data[k], k);
+                this.initDefines(data[k], k);
             }
         }
 
@@ -257,7 +253,7 @@ export class FactorioLuaEngine {
         return settings;
     }
 
-    private lua_require(L: any) {
+    private luaRequire(L: any) {
         const path = lua.lua_tojsstring(L, -1);
         // console.log(`require("${path}")`);
 
@@ -273,7 +269,7 @@ export class FactorioLuaEngine {
             });
         }
 
-        const result = this.find_script_in_context(path, true, additionalSearchPath);
+        const result = this.findScriptInContext(path, true, additionalSearchPath);
 
         if (result === null) {
             return 0;
