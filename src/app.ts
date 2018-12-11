@@ -60,15 +60,10 @@ async function test() {
     console.timeEnd("pack.resolveMods()");
     dumpMemUsage("After resolve");
 
-    console.time("pack.loadLocale()");
-    await pack.loadLocale("en");
-    console.timeEnd("pack.loadLocale()");
-    dumpMemUsage("After locale");
-
-    console.time("pack.loadData()");
-    await pack.loadData();
-    console.timeEnd("pack.loadData()");
-    dumpMemUsage("After data");
+    console.time("pack.dumpPack()");
+    await pack.dumpPack();
+    console.timeEnd("pack.dumpPack()");
+    dumpMemUsage("After pack");
 
     global.gc();
     dumpMemUsage("After gc");
