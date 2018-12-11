@@ -29,6 +29,7 @@ export class FactorioLuaEngine {
     constructor(p: FactorioPack) {
         this.orderedMods = p.modLoadOrder.map(k => p.mods[k]);
 
+        // extract the core "mod" so it can be handled separately
         this.coreContext = this.orderedMods.splice(0, 1)[0];
         this.coreContext.luaPaths.push("lualib/");
     }
