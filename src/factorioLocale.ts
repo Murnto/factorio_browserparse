@@ -13,24 +13,31 @@ interface LocalisationResult {
 }
 
 function internalResolveLocaleString(section: string | null, key: string, ctx: LocaleContext): LocalisationResult {
+    let result: LocalisationResult;
+
     if (ctx.locale[ctx.lang] === undefined) {
-        return { data: `{${section}.${key}}`, success: false };
-    }
-    if (section === null) {
-        if (ctx.locale[ctx.lang][key] === undefined) {
-            return { data: `{${key}}`, success: false };
+        result = { data: `{${section}.${key}}`, success: false };
+    } else if (section === null) {
+        if (typeof ctx.locale[ctx.lang][key] !== "string") {
+            result = { data: `{${key}}`, success: false };
+        } else {
+            result = { data: (ctx.locale[ctx.lang][key] as any) as string, success: true };
         }
-
-        return { data: (ctx.locale[ctx.lang][key] as any) as string, success: true };
-    }
-    if (ctx.locale[ctx.lang][section] === undefined) {
-        return { data: `{${section}.${key}}`, success: false };
-    }
-    if (ctx.locale[ctx.lang][section][key] === undefined) {
-        return { data: `{${section}.${key}}`, success: false };
+    } else if (ctx.locale[ctx.lang][section] === undefined) {
+        result = { data: `{${section}.${key}}`, success: false };
+    } else if (ctx.locale[ctx.lang][section][key] === undefined) {
+        result = { data: `{${section}.${key}}`, success: false };
+    } else {
+        result = { data: ctx.locale[ctx.lang][section][key], success: true };
     }
 
-    return { data: ctx.locale[ctx.lang][section][key], success: true };
+    if (!result.success || result.data.indexOf("__") !== 0) {
+        return result;
+    }
+
+    const [, refSection, refKey] = result.data.split("__");
+
+    return internalResolveLocaleString(refSection, refKey, ctx);
 }
 
 export function resolveLocale(obj: any, ctx: LocaleContext) {
