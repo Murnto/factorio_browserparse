@@ -10,7 +10,7 @@ async function getModFileHash(mod: FactorioMod, iconPath: string): Promise<strin
 
     await fs.writeFileSync(`icon/${md5}.${extension}`, data);
 
-    return md5;
+    return `${md5}.${extension}`;
 }
 
 export class IconManager {
@@ -39,12 +39,6 @@ export class IconManager {
 
         this.promisedHashLookup[icon] = md5Promise;
 
-        const md5 = await md5Promise;
-
-        // console.log(`${icon} = ${md5}`);
-
-        this.hashLookup[icon] = md5;
-
-        return md5;
+        return (this.hashLookup[icon] = await md5Promise);
     }
 }

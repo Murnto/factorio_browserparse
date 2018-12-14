@@ -290,14 +290,14 @@ export class FactorioPack {
         return locales;
     }
 
-    private processPrototype(obj: any) {
+    private async processPrototype(obj: any) {
         if (obj.icon !== undefined) {
-            obj.icon = this.iconManager.resolveIcon(obj.icon);
+            obj.icon = await this.iconManager.resolveIcon(obj.icon);
         } else if (obj.icons !== undefined) {
             assert(Array.isArray(obj.icons));
 
             for (const def of obj.icons) {
-                def.icon = this.iconManager.resolveIcon(def.icon);
+                def.icon = await this.iconManager.resolveIcon(def.icon);
             }
         }
     }
