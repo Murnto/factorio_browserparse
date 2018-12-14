@@ -4,7 +4,7 @@ import { dumpMemUsage } from "./utils";
 import { FactorioPack } from "./factorioPack";
 
 async function test() {
-    const pack = new FactorioPack();
+    const pack = new FactorioPack("seafblock_f16");
 
     console.time("Load zips");
 

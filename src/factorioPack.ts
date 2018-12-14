@@ -12,6 +12,11 @@ export class FactorioPack {
     public modLoadOrder: string[] = ["core"]; // core is always first
     public mods: { [index: string]: FactorioMod } = {};
     private iconManager = new IconManager(this);
+    private packName: string;
+
+    constructor(packName: string) {
+        this.packName = packName;
+    }
 
     public async dumpPack() {
         console.time("pack.loadLocale()");
@@ -162,10 +167,14 @@ export class FactorioPack {
     }
 
     private async dumpJson(data: any) {
+        fs.mkdirSync(`pack/${this.packName}`, { recursive: true });
         fs.mkdirSync(`icon`, { recursive: true });
         // const minimized = true;
 
         const techs = {};
+        const items = {};
+        const recipes = {};
+
         const unlockableRecipes = {};
         for (const tech of Object.values(data.technology as { [i: string]: any })) {
             const canBeUnlocked = tech.enabled === undefined ? true : !!tech.enabled;
@@ -176,9 +185,15 @@ export class FactorioPack {
                 continue;
             }
 
-            this.processPrototype(tech);
+            await this.processPrototype(tech);
 
             techs[tech.name] = tech;
+
+            if (tech.unit !== undefined && tech.unit.ingredients !== undefined) {
+                for (const ingd of tech.unit.ingredients) {
+                    this.fixItemAmounts(ingd);
+                }
+            }
 
             if (tech.effects === undefined) {
                 continue;
@@ -190,18 +205,28 @@ export class FactorioPack {
                 }
             }
         }
+        fs.writeFileSync(`pack/${this.packName}/technologies.json`, JSON.stringify(techs));
 
-        for (const item of Object.values(data.item)) {
-            this.processPrototype(item);
+        for (const item of Object.values(Object.values(data.item as { [i: string]: any }))) {
+            await this.processPrototype(item);
+
+            items[item.name] = item;
 
             // TODO
         }
+        fs.writeFileSync(`pack/${this.packName}/items.json`, JSON.stringify(items));
 
-        Object.values(data.recipe)
-            .filter((recipe: any) => unlockableRecipes[recipe.name])
-            .forEach((recipe: any) => {
-                this.processPrototype(recipe);
-            });
+        // noinspection TypeScriptUnresolvedVariable
+        await Promise.all(
+            Object.values(data.recipe)
+                .filter((recipe: any) => unlockableRecipes[recipe.name])
+                .map(async (recipe: any) => {
+                    await this.processPrototype(recipe);
+
+                    recipes[recipe.name] = recipe;
+                }),
+        );
+        fs.writeFileSync(`pack/${this.packName}/recipes.json`, JSON.stringify(recipes));
     }
 
     private fixItemAmounts(items: any) {
