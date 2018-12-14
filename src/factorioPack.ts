@@ -146,9 +146,6 @@ export class FactorioPack {
 
             this.applyDifficulty(recipe, "normal");
             this.fixRecipe(recipe);
-            if (recipe.name === "angels-nitinol-smelting-1") {
-                console.log("a");
-            }
             resolveLocale(recipe, {
                 ...ctx,
                 defaultSections: ["recipe-name", ...ctx.defaultSections],
