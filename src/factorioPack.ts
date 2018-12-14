@@ -3,12 +3,15 @@ import * as fs from "fs";
 import { FactorioMod } from "./factorioMod";
 import { FactorioLuaEngine } from "./factorioLuaEngine";
 import * as ini from "ini";
+import { IconManager } from "./iconManager";
 import merge = require("lodash.merge");
 import { resolveLocale } from "./factorioLocale";
+import * as assert from "assert";
 
 export class FactorioPack {
     public modLoadOrder: string[] = ["core"]; // core is always first
     public mods: { [index: string]: FactorioMod } = {};
+    private iconManager = new IconManager(this);
 
     public async dumpPack() {
         console.time("pack.loadLocale()");
@@ -22,6 +25,7 @@ export class FactorioPack {
         dumpMemUsage("After data");
 
         this.augmentData(data, locale);
+        this.dumpJson(data);
 
         fs.writeFileSync("data.json", JSON.stringify(data));
     }
@@ -160,6 +164,49 @@ export class FactorioPack {
         }
     }
 
+    private async dumpJson(data: any) {
+        fs.mkdirSync(`icon`, { recursive: true });
+        // const minimized = true;
+
+        const techs = {};
+        const unlockableRecipes = {};
+        for (const tech of Object.values(data.technology as { [i: string]: any })) {
+            const canBeUnlocked = tech.enabled === undefined ? true : !!tech.enabled;
+
+            // TODO recursively check prereqs?
+
+            if (!canBeUnlocked) {
+                continue;
+            }
+
+            this.processPrototype(tech);
+
+            techs[tech.name] = tech;
+
+            if (tech.effects === undefined) {
+                continue;
+            }
+
+            for (const eff of tech.effects) {
+                if (eff.type === "unlock-recipe") {
+                    unlockableRecipes[eff.recipe] = true;
+                }
+            }
+        }
+
+        for (const item of Object.values(data.item)) {
+            this.processPrototype(item);
+
+            // TODO
+        }
+
+        Object.values(data.recipe)
+            .filter((recipe: any) => unlockableRecipes[recipe.name])
+            .forEach((recipe: any) => {
+                this.processPrototype(recipe);
+            });
+    }
+
     private fixItemAmounts(items: any) {
         if (items === undefined) {
             return;
@@ -246,5 +293,15 @@ export class FactorioPack {
         return locales;
     }
 
+    private processPrototype(obj: any) {
+        if (obj.icon !== undefined) {
+            obj.icon = this.iconManager.resolveIcon(obj.icon);
+        } else if (obj.icons !== undefined) {
+            assert(Array.isArray(obj.icons));
+
+            for (const def of obj.icons) {
+                def.icon = this.iconManager.resolveIcon(def.icon);
+            }
+        }
     }
 }

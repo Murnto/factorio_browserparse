@@ -45,6 +45,17 @@ export class FactorioMod {
     private loadedZip!: JSZip | null;
     private topLevelPrefix: string = "";
 
+    public async getFile<T extends OutputType>(path: string, type: T, purge: boolean = true): Promise<OutputByType[T]> {
+        const file = this.loadedZip!.file(path);
+        const content = await file.async(type);
+
+        if (purge) {
+            delete (file as any)._data;
+        }
+
+        return content;
+    }
+
     // noinspection TypeScriptUnresolvedVariable
     public async getFiles<T extends OutputType>(
         predicate: (relativePath: string, file: JSZip.JSZipObject) => boolean,

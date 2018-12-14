@@ -7,3 +7,5 @@ yarn.lock
 !package.json
 !tsconfig.json
 !tslint.json
+pack/
+icon/
