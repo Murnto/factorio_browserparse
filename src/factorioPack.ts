@@ -318,12 +318,14 @@ export class FactorioPack {
     private async processPrototype(obj: any) {
         if (obj.icon !== undefined) {
             obj.icon = await this.iconManager.resolveIcon(obj.icon);
-        } else if (obj.icons !== undefined) {
-            assert(Array.isArray(obj.icons));
+        }
+        if (obj.icons === undefined) {
+            return;
+        }
 
-            for (const def of obj.icons) {
-                def.icon = await this.iconManager.resolveIcon(def.icon);
-            }
+        assert(Array.isArray(obj.icons));
+        for (const def of obj.icons) {
+            def.icon = await this.iconManager.resolveIcon(def.icon);
         }
     }
 }
