@@ -233,7 +233,7 @@ export class FactorioPack {
         // noinspection TypeScriptUnresolvedVariable
         await Promise.all(
             Object.values(data.recipe)
-                .filter((recipe: any) => unlockableRecipes[recipe.name] && recipe.enabled !== false)
+                .filter((recipe: any) => unlockableRecipes[recipe.name] || recipe.enabled !== false)
                 .map(async (recipe: any) => {
                     await this.processPrototype(recipe);
 
