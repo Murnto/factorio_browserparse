@@ -143,26 +143,32 @@ export class FactorioPack {
 
         for (const item of Object.values(data.item)) {
             this.applyDifficulty(item, "normal");
-            resolveLocale(item, ctx);
         }
 
         for (const rName of Object.keys(data.recipe)) {
             const recipe = data.recipe[rName];
 
             this.applyDifficulty(recipe, "normal");
-            this.fixRecipe(recipe);
-            resolveLocale(recipe, {
-                ...ctx,
-                defaultSections: ["recipe-name", ...ctx.defaultSections],
-            });
+            this.fixRecipe(data, recipe);
         }
 
-        for (const technology of Object.values(data.technology)) {
+        for (const technology of Object.values(data.technology as { [i: string]: any })) {
             this.applyDifficulty(technology, "normal");
-            resolveLocale(technology, {
+
+            if (technology.unit) {
+                this.fixItemAmounts(data, technology.unit.ingredients);
+            }
+        }
+
+        for (const type of Object.keys(data)) {
+            const newCtx = {
                 ...ctx,
-                defaultSections: ["technology-name", ...ctx.defaultSections],
-            });
+                defaultSections: [`${type}-name`, ...ctx.defaultSections],
+            };
+
+            for (const obj of Object.values(data[type])) {
+                resolveLocale(obj, newCtx);
+            }
         }
     }
 
@@ -194,7 +200,7 @@ export class FactorioPack {
 
             if (tech.unit !== undefined && tech.unit.ingredients !== undefined) {
                 for (const ingd of tech.unit.ingredients) {
-                    this.fixItemAmounts(ingd);
+                    this.fixItemAmounts(data, ingd);
                 }
             }
 
@@ -252,7 +258,7 @@ export class FactorioPack {
         fs.writeFileSync(`pack/${this.packName}.json`, JSON.stringify(processedData));
     }
 
-    private fixItemAmounts(items: any) {
+    private fixItemAmounts(data: any, items: any) {
         if (items === undefined) {
             return;
         }
@@ -272,9 +278,9 @@ export class FactorioPack {
         }
     }
 
-    private fixRecipe(recipe: any) {
-        this.fixItemAmounts(recipe.ingredients);
-        this.fixItemAmounts(recipe.results);
+    private fixRecipe(data: any, recipe: any) {
+        this.fixItemAmounts(data, recipe.ingredients);
+        this.fixItemAmounts(data, recipe.results);
 
         if (recipe.result === undefined) {
             return;
