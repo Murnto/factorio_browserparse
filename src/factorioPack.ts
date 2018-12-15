@@ -8,6 +8,8 @@ import merge = require("lodash.merge");
 import { resolveLocale } from "./factorioLocale";
 import * as assert from "assert";
 
+const itemTypes = ["fluid", "item", "gun", "blueprint", "deconstruction-item", "ammo", "capsule", "rail-planner", "module", "armor", "tool", "mining-tool", "repair-tool"];
+
 export class FactorioPack {
     public modLoadOrder: string[] = ["core"]; // core is always first
     public mods: { [index: string]: FactorioMod } = {};
@@ -266,15 +268,18 @@ export class FactorioPack {
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
 
-            if (!Array.isArray(item)) {
-                continue;
+            if (Array.isArray(item)) {
+                items[i] = {
+                    amount: item[1],
+                    name: item[0],
+                    type: "item",
+                };
             }
 
-            items[i] = {
-                amount: item[1],
-                name: item[0],
-                type: "item",
-            };
+            const resolved = this.resolvePrototype(data, items[i].type, items[i].name);
+            if (resolved !== undefined) {
+                items[i].type = resolved.type;
+            }
         }
     }
 
@@ -354,6 +359,23 @@ export class FactorioPack {
                 def.icon = await this.iconManager.resolveIcon(def.icon);
             }
         }
+    }
 
+    private resolvePrototype(data: any, type: string, name: string): any {
+        let item = data[type] && data[type][name];
+
+        if (item !== undefined) {
+            return item;
+        }
+
+        for (const otype of itemTypes) {
+            item = data[otype][name];
+
+            if (item !== undefined) {
+                return item;
+            }
+        }
+
+        return;
     }
 }
