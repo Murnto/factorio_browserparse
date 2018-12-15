@@ -11,7 +11,7 @@
     },
     "rules": {
         "no-collapsible-if": true,
-        "early-exit": true,
+//        "early-exit": true,
         "member-ordering": [
             true,
             {

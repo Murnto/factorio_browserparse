@@ -319,13 +319,12 @@ export class FactorioPack {
         if (obj.icon !== undefined) {
             obj.icon = await this.iconManager.resolveIcon(obj.icon);
         }
-        if (obj.icons === undefined) {
-            return;
+        if (obj.icons !== undefined) {
+            assert(Array.isArray(obj.icons));
+            for (const def of obj.icons) {
+                def.icon = await this.iconManager.resolveIcon(def.icon);
+            }
         }
 
-        assert(Array.isArray(obj.icons));
-        for (const def of obj.icons) {
-            def.icon = await this.iconManager.resolveIcon(def.icon);
-        }
     }
 }
