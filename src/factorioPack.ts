@@ -167,13 +167,16 @@ export class FactorioPack {
     }
 
     private async dumpJson(data: any) {
-        fs.mkdirSync(`pack/${this.packName}`, { recursive: true });
+        fs.mkdirSync(`pack`, { recursive: true });
         fs.mkdirSync(`icon`, { recursive: true });
         // const minimized = true;
 
         const techs = {};
-        const items = {};
         const recipes = {};
+        const processedData = {
+            recipe: recipes,
+            technology: techs,
+        };
 
         const unlockableRecipes = {};
         for (const tech of Object.values(data.technology as { [i: string]: any })) {
@@ -205,28 +208,48 @@ export class FactorioPack {
                 }
             }
         }
-        fs.writeFileSync(`pack/${this.packName}/technologies.json`, JSON.stringify(techs));
 
-        for (const item of Object.values(Object.values(data.item as { [i: string]: any }))) {
-            await this.processPrototype(item);
-
-            items[item.name] = item;
-
-            // TODO
-        }
-        fs.writeFileSync(`pack/${this.packName}/items.json`, JSON.stringify(items));
+        // for (const type of itemTypes) {
+        //     processedData[type] = {};
+        //
+        //     if (data[type] === undefined) {
+        //         console.log(`"${type}" not found in data?`);
+        //         continue;
+        //     }
+        //
+        //     for (const item of Object.values(Object.values(data[type] as { [i: string]: any }))) {
+        //         await this.processPrototype(item);
+        //
+        //         processedData[type][item.name] = item;
+        //     }
+        // }
 
         // noinspection TypeScriptUnresolvedVariable
         await Promise.all(
             Object.values(data.recipe)
-                .filter((recipe: any) => unlockableRecipes[recipe.name])
+                .filter((recipe: any) => unlockableRecipes[recipe.name] && recipe.enabled !== false)
                 .map(async (recipe: any) => {
                     await this.processPrototype(recipe);
 
                     recipes[recipe.name] = recipe;
                 }),
         );
-        fs.writeFileSync(`pack/${this.packName}/recipes.json`, JSON.stringify(recipes));
+
+        for (const type of Object.keys(data)) {
+            if (processedData[type] !== undefined) {
+                continue;
+            }
+
+            processedData[type] = {};
+
+            for (const item of Object.values(Object.values(data[type] as { [i: string]: any }))) {
+                await this.processPrototype(item);
+
+                processedData[type][item.name] = item;
+            }
+        }
+
+        fs.writeFileSync(`pack/${this.packName}.json`, JSON.stringify(processedData));
     }
 
     private fixItemAmounts(items: any) {
