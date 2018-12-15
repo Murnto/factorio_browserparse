@@ -20,6 +20,9 @@ export class IconManager {
     constructor(private pack: FactorioPack) {}
 
     public async resolveIcon(icon: string): Promise<string> {
+        if (icon.indexOf("/") === -1) {
+            return icon;
+        }
         if (this.hashLookup[icon] !== undefined) {
             return this.hashLookup[icon];
         }
