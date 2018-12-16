@@ -39,6 +39,7 @@
         "no-unnecessary-else": true,
         "class-name": true,
         "no-return-undefined": true,
+        "no-conditional-assignment": false,
         "no-unnecessary-type-annotation": true,
         "no-unused": true,
         "no-var-before-return": true,

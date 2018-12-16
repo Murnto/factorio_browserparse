@@ -31,13 +31,25 @@ function internalResolveLocaleString(section: string | null, key: string, ctx: L
         result = { data: ctx.locale[ctx.lang][section][key], success: true };
     }
 
-    if (!result.success || result.data.indexOf("__") !== 0) {
+    if (!result.success || result.data.indexOf("__") === -1) {
         return result;
     }
 
-    const [, refSection, refKey] = result.data.split("__");
+    const proxyPat = /__([^_]+)__([^_]+)__/g;
+    let match: RegExpExecArray | null;
 
-    return internalResolveLocaleString(refSection.toLocaleLowerCase() + "-name", refKey, ctx);
+    let proxyData = "";
+    let markerIndex = 0;
+
+    while ((match = proxyPat.exec(result.data))) {
+        proxyData += result.data.slice(markerIndex, match.index);
+        proxyData += internalResolveLocaleString(match[1].toLocaleLowerCase() + "-name", match[2], ctx).data;
+
+        markerIndex = match.index + match[0].length;
+    }
+    proxyData += result.data.slice(markerIndex);
+
+    return { data: proxyData, success: true };
 }
 
 export function resolveLocale(obj: any, ctx: LocaleContext) {
@@ -52,10 +64,6 @@ export function resolveLocale(obj: any, ctx: LocaleContext) {
     }
 
     obj.title = loc.data;
-
-    if (!loc.success) {
-        console.log("Didn't find locale for", obj);
-    }
 }
 
 function resolveLocaleFmt(obj: any, ctx: LocaleContext): LocalisationResult {
