@@ -8,7 +8,25 @@ import merge = require("lodash.merge");
 import { resolveLocale } from "./factorioLocale";
 import * as assert from "assert";
 
-const itemTypes = ["fluid", "item", "gun", "blueprint", "deconstruction-item", "ammo", "capsule", "rail-planner", "module", "armor", "tool", "mining-tool", "repair-tool"];
+const itemTypes = [
+    "fluid",
+    "item",
+    "gun",
+    "blueprint",
+    "deconstruction-item",
+    "ammo",
+    "capsule",
+    "rail-planner",
+    "module",
+    "armor",
+    "tool",
+    "mining-tool",
+    "repair-tool",
+    "item-with-entity-data",
+    "item-with-label",
+    "item-with-tags",
+    "item-with-inventory",
+];
 
 export class FactorioPack {
     public modLoadOrder: string[] = ["core"]; // core is always first
@@ -299,7 +317,7 @@ export class FactorioPack {
                 {
                     amount: recipe.result_count,
                     name: recipe.result,
-                    type: "item",
+                    type: (this.resolvePrototype(data, "item", recipe.result) || {}).type,
                 },
             ];
 
@@ -309,7 +327,7 @@ export class FactorioPack {
                 {
                     amount: 1,
                     name: recipe.result,
-                    type: "item",
+                    type: (this.resolvePrototype(data, "item", recipe.result) || {}).type,
                 },
             ];
         }
