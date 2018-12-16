@@ -37,7 +37,7 @@ function internalResolveLocaleString(section: string | null, key: string, ctx: L
 
     const [, refSection, refKey] = result.data.split("__");
 
-    return internalResolveLocaleString(refSection, refKey, ctx);
+    return internalResolveLocaleString(refSection.toLocaleLowerCase() + "-name", refKey, ctx);
 }
 
 export function resolveLocale(obj: any, ctx: LocaleContext) {
