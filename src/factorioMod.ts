@@ -101,27 +101,16 @@ export class FactorioMod {
         }
         this.loadedZip = await new JSZip().loadAsync(data);
 
-        this.detectToplevelFolder();
+        await this.loadInternal(zipPath, debugTiming);
+    }
+
+    public async loadBrowserFile(file: File, debugTiming: boolean = false) {
         if (debugTiming) {
-            console.timeEnd(`Parse zip: ${zipPath}`);
+            console.time(`Parse zip: ${file.name}`);
         }
+        this.loadedZip = await new JSZip().loadAsync(file);
 
-        if (debugTiming) {
-            console.time(`Decompress lua scripts: ${zipPath}`);
-        }
-        this.luaFiles = await this.getFiles(relativePath => relativePath.endsWith(".lua"), "text");
-        if (debugTiming) {
-            console.timeEnd(`Decompress lua scripts: ${zipPath}`);
-        }
-
-        const infoFile = this.loadedZip.file("info.json");
-        const infoString = await infoFile.async("text");
-        this.info = JSON.parse(infoString);
-
-        // (this.loadedZip as any).files = null;
-        // this.loadedZip = null;
-
-        this.parseDependencies();
+        await this.loadInternal(file.name, debugTiming);
     }
 
     private detectToplevelFolder() {
@@ -135,6 +124,30 @@ export class FactorioMod {
             this.topLevelPrefix = file.name.slice(0, file.name.lastIndexOf("info.json"));
             this.loadedZip = this.loadedZip!.folder(this.topLevelPrefix);
         }
+    }
+
+    private async loadInternal(zipPath: string, debugTiming: boolean = false) {
+        this.detectToplevelFolder();
+        if (debugTiming) {
+            console.timeEnd(`Parse zip: ${zipPath}`);
+        }
+
+        if (debugTiming) {
+            console.time(`Decompress lua scripts: ${zipPath}`);
+        }
+        this.luaFiles = await this.getFiles(relativePath => relativePath.endsWith(".lua"), "text");
+        if (debugTiming) {
+            console.timeEnd(`Decompress lua scripts: ${zipPath}`);
+        }
+
+        const infoFile = this.loadedZip!.file("info.json");
+        const infoString = await infoFile.async("text");
+        this.info = JSON.parse(infoString);
+
+        // (this.loadedZip as any).files = null;
+        // this.loadedZip = null;
+
+        this.parseDependencies();
     }
 
     private parseDependencies() {
