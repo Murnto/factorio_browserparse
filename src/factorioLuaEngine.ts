@@ -256,7 +256,7 @@ export class FactorioLuaEngine {
 
     private luaRequire(L: any) {
         const path = lua.lua_tojsstring(L, -1);
-        // console.log(`require("${path}")`);
+        // console.log(`${this.availableContexts[0].info.name}: require("${path}")`);
 
         lua.lua_pop(L, 1);
 

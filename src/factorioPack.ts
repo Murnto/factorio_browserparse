@@ -49,10 +49,10 @@ export class FactorioPack {
         console.timeEnd("pack.loadData()");
         dumpMemUsage("After data");
 
+        // fs.writeFileSync("data.json", JSON.stringify(data));
+
         this.augmentData(data, locale);
         this.dumpJson(data);
-
-        fs.writeFileSync("data.json", JSON.stringify(data));
     }
 
     public async loadModArchive(zipPath: string) {
