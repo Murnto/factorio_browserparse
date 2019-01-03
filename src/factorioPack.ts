@@ -38,6 +38,10 @@ export class FactorioPack {
         this.packName = packName;
     }
 
+    public addMod(mod: FactorioMod) {
+        this.mods[mod.info.name] = mod;
+    }
+
     public async dumpPack() {
         console.time("pack.loadLocale()");
         const locale = await this.loadLocale("en");
@@ -134,10 +138,6 @@ export class FactorioPack {
                 break;
             }
         }
-    }
-
-    private addMod(mod: FactorioMod) {
-        this.mods[mod.info.name] = mod;
     }
 
     private applyDifficulty(obj: any, difficulty: string) {
