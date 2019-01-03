@@ -10,7 +10,7 @@
         "lint": "tslint -p tsconfig.json --fix",
         "preversion": "npm run lint",
         "prepublishOnly": "npm test && npm run lint",
-        "prepare": "npm run build",
+        "prepare": "patch-package && npm run build",
         "version": "npm run format && git add -A src"
     },
     "dependencies": {
@@ -28,6 +28,8 @@
         "debug": "~2.6.9",
         "es6-promise": "^4.2.5",
         "es7-object-polyfill": "^0.0.7",
+        "patch-package": "^5.1.1",
+        "postinstall-prepare": "^1.0.1",
         "prettier": "^1.15.3",
         "source-map-support": "^0.5.9",
         "tslib": "^1.9.3",
