@@ -7,6 +7,7 @@ import { IconManager } from "./iconManager";
 import merge = require("lodash.merge");
 import { resolveLocale } from "./factorioLocale";
 import * as assert from "assert";
+import { ModDependencyError } from "./modDependencyError";
 
 const itemTypes = [
     "fluid",
@@ -77,7 +78,7 @@ export class FactorioPack {
 
         while (remaining.length) {
             if (priorProgress === remaining.length) {
-                throw new Error(`Stuck resolving remaining mods: ${remaining}`);
+                throw new ModDependencyError(`Stuck resolving remaining mods: ${remaining}`);
             }
             priorProgress = remaining.length;
 
@@ -97,7 +98,7 @@ export class FactorioPack {
                             continue; // skip missing optional dependency
                         }
 
-                        throw new Error(`Dependency check failed! "${name}" requires unknown mod "${dep.name}"`);
+                        throw new ModDependencyError(`Dependency check failed! "${name}" requires unknown mod "${dep.name}"`, mod);
                     }
 
                     if (this.modLoadOrder.indexOf(dep.name) === -1) {
@@ -115,16 +116,19 @@ export class FactorioPack {
                     switch (dep.relation) {
                         case "=":
                             if (versionComparison !== 0) {
-                                throw new Error(`Dependency check failed! "${name}" requires version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`);
+                                throw new ModDependencyError(`Dependency check failed! "${name}" requires version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`, mod);
                             }
                             break;
                         case ">=":
                             if (versionComparison < 0) {
-                                throw new Error(`Dependency check failed! "${name}" requires at least version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`);
+                                throw new ModDependencyError(
+                                    `Dependency check failed! "${name}" requires at least version "${dep.version}" of "${dep.name}", but found "${depMod.info.version}" instead`,
+                                    mod,
+                                );
                             }
                             break;
                         default:
-                            throw new Error(`Unknown dependency relation "${dep.relation}"`);
+                            throw new ModDependencyError(`Unknown dependency relation "${dep.relation}"`, mod);
                     }
                 }
 
