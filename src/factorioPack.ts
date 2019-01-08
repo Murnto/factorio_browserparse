@@ -69,7 +69,13 @@ export class FactorioPack {
         // console.timeEnd(`Loading archive: ${zipPath}`);
     }
 
+    public removeMod(name: string) {
+        delete this.mods[name];
+    }
+
     public resolveMods() {
+        this.modLoadOrder = ["core"];
+
         const remaining = Object.keys(this.mods);
         remaining.sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }));
 
