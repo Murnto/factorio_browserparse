@@ -3,7 +3,7 @@ import { lua_stack_trace_introspect, lua_value_to_js, mostRecentFileInStackTrace
 import { FactorioMod } from "./factorioMod";
 import apiDefines from "./apiDefines";
 // @ts-ignore
-import * as fengari from "fengari";
+import * as fengari from "fengari-web";
 // @ts-ignore
 import { luaS_newliteral } from "fengari/src/lstring";
 // @ts-ignore

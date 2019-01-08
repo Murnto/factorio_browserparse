@@ -1,6 +1,6 @@
 import * as assert from "assert";
 // @ts-ignore
-import { lua, to_jsstring } from "fengari";
+import { lua, to_jsstring } from "fengari-web";
 
 export function push_js_object(L: any, obj: any | number) {
     if (Array.isArray(obj)) {
