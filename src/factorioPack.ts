@@ -42,7 +42,7 @@ export class FactorioPack {
         this.mods[mod.info.name] = mod;
     }
 
-    public async dumpPack() {
+    public async dumpPack(): Promise<any> {
         console.time("pack.loadLocale()");
         const locale = await this.loadLocale("en");
         console.timeEnd("pack.loadLocale()");
@@ -56,7 +56,7 @@ export class FactorioPack {
         // fs.writeFileSync("data.json", JSON.stringify(data));
 
         this.augmentData(data, locale);
-        this.dumpJson(data);
+        return this.dumpJson(data);
     }
 
     public async loadModArchive(zipPath: string) {
@@ -195,7 +195,7 @@ export class FactorioPack {
         }
     }
 
-    private async dumpJson(data: any) {
+    private async dumpJson(data: any): Promise<any> {
         // TODO
         // const fs = require("fs");
         // fs.mkdirSync(`pack`, { recursive: true });
@@ -283,6 +283,8 @@ export class FactorioPack {
         // FIXME
         // const fs = require("fs");
         // fs.writeFileSync(`pack/${this.packName}.json`, JSON.stringify(processedData));
+
+        return processedData;
     }
 
     private fixItemAmounts(data: any, items: any) {
