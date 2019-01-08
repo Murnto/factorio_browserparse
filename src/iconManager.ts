@@ -1,14 +1,15 @@
 import { FactorioPack } from "./factorioPack";
 import { hex } from "js-md5";
 import { FactorioMod } from "./factorioMod";
-import * as fs from "fs";
 
 async function getModFileHash(mod: FactorioMod, iconPath: string): Promise<string> {
     const data = await mod.getFile(iconPath, "uint8array");
     const extension = iconPath.slice(iconPath.lastIndexOf(".") + 1);
     const md5 = hex(data);
 
-    await fs.writeFileSync(`icon/${md5}.${extension}`, data);
+    // TODO
+    // const fs = require("fs");
+    // await fs.writeFileSync(`icon/${md5}.${extension}`, data);
 
     return `${md5}.${extension}`;
 }

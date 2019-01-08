@@ -1,5 +1,4 @@
 import { compareVersions, dumpMemUsage } from "./utils";
-import * as fs from "fs";
 import { FactorioMod } from "./factorioMod";
 import { FactorioLuaEngine } from "./factorioLuaEngine";
 import * as ini from "ini";
@@ -197,8 +196,10 @@ export class FactorioPack {
     }
 
     private async dumpJson(data: any) {
-        fs.mkdirSync(`pack`, { recursive: true });
-        fs.mkdirSync(`icon`, { recursive: true });
+        // TODO
+        // const fs = require("fs");
+        // fs.mkdirSync(`pack`, { recursive: true });
+        // fs.mkdirSync(`icon`, { recursive: true });
         // const minimized = true;
 
         const techs = {};
@@ -279,7 +280,9 @@ export class FactorioPack {
             }
         }
 
-        fs.writeFileSync(`pack/${this.packName}.json`, JSON.stringify(processedData));
+        // FIXME
+        // const fs = require("fs");
+        // fs.writeFileSync(`pack/${this.packName}.json`, JSON.stringify(processedData));
     }
 
     private fixItemAmounts(data: any, items: any) {

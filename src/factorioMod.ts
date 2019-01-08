@@ -1,5 +1,4 @@
 import * as JSZip from "jszip";
-import * as fs from "fs";
 
 interface ModInfo {
     author: string;
@@ -91,6 +90,7 @@ export class FactorioMod {
         if (debugTiming) {
             console.time(`Load zip: ${zipPath}`);
         }
+        const fs = require("fs");
         const data = fs.readFileSync(zipPath);
         if (debugTiming) {
             console.timeEnd(`Load zip: ${zipPath}`);
