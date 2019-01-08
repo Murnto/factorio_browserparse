@@ -29,10 +29,10 @@ const itemTypes = [
 ];
 
 export class FactorioPack {
+    public iconManager = new IconManager(this);
     public modLoadOrder: string[] = ["core"]; // core is always first
     public mods: { [index: string]: FactorioMod } = {};
-    private iconManager = new IconManager(this);
-    private packName: string;
+    public readonly packName: string;
 
     constructor(packName: string) {
         this.packName = packName;
